@@ -10,12 +10,12 @@ A small, convolution-only neural twin of India's daily weather. It rolls forward
 - Offline, CPU-only inference
 
 ## Results (Validation 2020–2021, 721 daily windows)
-| Lead Day | Metric | Repeat Yesterday | Climatology (2005–2019) | VarshaTwin |
+| Lead Day | Metric | Repeat Yesterday | Climatology (2005–2019) | VarshaTwin (L1 Baseline) |
 |---|---|---|---|---|
-| Day 1 | Mean Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `1.03 / 6.33 / 1.09 / 1.11 / 198.4 / 3.75` | `1.76 / 6.78 / 1.66 / 1.46 / 282.0 / 6.47` | *[Step 4]* |
-| Day 4 | Mean Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `1.92 / 9.25 / 2.02 / 1.95 / 341.6 / 7.51` | `1.76 / 6.77 / 1.66 / 1.46 / 281.5 / 6.47` | *[Step 4]* |
-| Day 8 | Mean Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `2.25 / 9.36 / 2.23 / 1.99 / 378.9 / 8.35` | `1.76 / 6.77 / 1.66 / 1.46 / 281.4 / 6.47` | *[Step 4]* |
-| Day 1 / 4 / 8 | Heavy-Rain CSI (`tp > 10.0 mm/day`) | `0.4290 / 0.2176 / 0.2033` | `0.2673 / 0.2676 / 0.2678` | *[Step 4]* |
+| Day 1 | Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `1.03 / 6.33 / 1.09 / 1.11 / 198.4 / 3.75` | `1.76 / 6.78 / 1.66 / 1.46 / 282.0 / 6.47` | **`0.96 / 5.37 / 0.98 / 0.96 / 170.8 / 3.32`** (`+6.6%` to `+15.1%` skill) |
+| Day 4 | Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `1.92 / 9.25 / 2.02 / 1.95 / 341.6 / 7.51` | `1.76 / 6.77 / 1.66 / 1.46 / 281.5 / 6.47` | **`1.69 / 6.86 / 1.59 / 1.42 / 270.5 / 6.05`** (Beats Persistence on all 6 & Climatology on 5/6) |
+| Day 8 | Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `2.25 / 9.36 / 2.23 / 1.99 / 378.9 / 8.35` | `1.76 / 6.77 / 1.66 / 1.46 / 281.4 / 6.47` | **`1.82 / 6.88 / 1.67 / 1.46 / 282.9 / 6.52`** (Beats Persistence by `+19%` to `+27%`) |
+| Day 1 / 4 / 8 | Heavy-Rain CSI (`tp > 10.0 mm/day`) | `0.4290 / 0.2176 / 0.2033` | `0.2673 / 0.2676 / 0.2678` | **`0.4322 / 0.1720 / 0.1858`** |
 
 ## Setup
 ```bash

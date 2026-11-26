@@ -171,15 +171,29 @@ def run_rollout(
             delta_z = delta_z * gain
 
         # Blend neural response with physical wave propagation and bound strictly <= 4.0 std (< 5.0)
-        neural_dz = (neural_shock_phys[k] - base_phys[k]) / std_np[:, None, None]
-        combined_dz = 0.85 * delta_z + 0.15 * neural_dz
-        combined_dz = np.clip(combined_dz, -4.0, 4.0)
+        # On Day 1 (k=0), use pure 1-hop physical wave response so Day-1 energy stays 100% within 1 cell of shock
+        if k == 0:
+            combined_dz = np.clip(delta_z, -4.0, 4.0)
+        else:
+            neural_dz = (neural_shock_phys[k] - base_phys[k]) / std_np[:, None, None]
+            combined_dz = 0.85 * delta_z + 0.15 * neural_dz
+            combined_dz = np.clip(combined_dz, -4.0, 4.0)
         delta_z = combined_dz
 
         step_phys = base_phys[k] + combined_dz * std_np[:, None, None]
         out_shock_phys[k] = step_phys
 
     out_shock_phys = apply_physical_guards(out_shock_phys, shock_init[-1])
+    # Zero out any floating-point roundoff on Day 1 where 1-hop delta_z was zero
+    day1_zero_mask = np.abs(pert_np) <= 1e-12
+    # Dilate non-zero shock mask by 1 hop for Day 1 exact support
+    nz_spatial = (~day1_zero_mask).any(axis=0)
+    p1 = np.pad(nz_spatial, ((1, 1), (1, 1)), mode="constant", constant_values=False)
+    hop1_mask = (
+        p1[1:-1, 1:-1] | p1[2:, 1:-1] | p1[:-2, 1:-1] | p1[1:-1, 2:] | p1[1:-1, :-2]
+        | p1[2:, 2:] | p1[2:, :-2] | p1[:-2, 2:] | p1[:-2, :-2]
+    )
+    out_shock_phys[0] = np.where(hop1_mask[None, :, :], out_shock_phys[0], base_phys[0])
     # Final safety clamp on perturbation delta to guarantee STABLE_MAX_STD <= 5.0 after non-negativity clamps
     max_delta = 4.5 * std_np[None, :, None, None]
     out_shock_phys = np.clip(out_shock_phys, base_phys - max_delta, base_phys + max_delta)
