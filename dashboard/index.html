@@ -3,390 +3,518 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VarshaTwin — Climate Digital Twin &amp; Disaster Multiverse Command Center</title>
+  <title>VarshaTwin — Climate Digital Twin of India</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Top Operations Telemetry Header -->
+  <!-- Top Progress Bar (GPU transform scaleX during /simulate) -->
+  <div id="sim-progress-bar" class="sim-progress" aria-hidden="true"></div>
+
+  <!-- TOP BAR (56px) -->
   <header class="topbar">
-    <div class="brand-group">
-      <div class="brand-logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
-          <path d="M12 12 19.07 4.93" />
-          <circle cx="12" cy="12" r="3" />
+    <div class="topbar-left">
+      <button id="btn-collapse-left" type="button" class="icon-btn" title="Collapse or expand control sidebar" aria-label="Toggle control sidebar" aria-expanded="true" aria-controls="left-rail">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <line x1="9" y1="3" x2="9" y2="21" />
         </svg>
-      </div>
-      <div>
-        <h1 class="brand-title">VARSHATWIN <span class="brand-sub">CLIMATE DIGITAL TWIN &amp; DISASTER MULTIVERSE</span></h1>
-        <p class="brand-pipeline">DATA (3-DAY ERA5) &rarr; PREDICTION (TIMELINE PRIME) &rarr; SIMULATION (SHOCK BRANCHING) &rarr; DECISION SUPPORT (POLICY CO-PILOT)</p>
+      </button>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
+            <path d="M12 12 19.07 4.93" />
+            <circle cx="12" cy="12" r="2.8" />
+          </svg>
+        </div>
+        <span class="brand-name">VarshaTwin</span>
+        <span class="brand-tagline">Climate Digital Twin of India</span>
       </div>
     </div>
 
-    <div class="telemetry-bar">
-      <div class="api-url-box">
-        <label for="api-url-input">LIVE ENGINE</label>
+    <div class="topbar-right">
+      <div class="endpoint-chip" title="Local offline FastAPI endpoint (POST /health &amp; POST /simulate)">
+        <label for="api-url-input" class="sr-only">Inference Server URL</label>
         <input id="api-url-input" type="text" value="http://127.0.0.1:8000" aria-label="Inference Server URL" />
       </div>
-      <div id="api-status-pill" class="status-pill status-connecting">
+
+      <div id="api-status-pill" class="status-pill status-connecting" role="status" title="Live connection status to serve.py">
         <span class="status-dot"></span>
-        <span id="api-status-text">CONNECTING...</span>
+        <span id="api-status-text">Connecting</span>
       </div>
-      <div class="metric-chip">
-        <span class="chip-label">MODEL</span>
-        <span id="telemetry-model" class="chip-val">VarshaTwin-L3</span>
+
+      <div class="meta-item" title="Loaded neural checkpoint in weights/twin.pt">
+        <span class="meta-label">Model</span>
+        <span id="telemetry-model" class="meta-val">VarshaTwin-L3</span>
       </div>
-      <div class="metric-chip">
-        <span class="chip-label">INFERENCE</span>
-        <span id="telemetry-ms" class="chip-val">-- ms</span>
+
+      <div class="meta-item" title="Server execution time for 10-day rollout">
+        <span class="meta-label">Latency</span>
+        <span id="telemetry-ms" class="meta-val tabular">-- ms</span>
       </div>
-      <div class="metric-chip">
-        <span class="chip-label">CAUSALITY</span>
-        <span id="telemetry-causality" class="chip-val chip-accent">15.0 / 15.0</span>
-      </div>
+
+      <button id="btn-trust-topbar" type="button" class="trust-pill pending" title="View all 8 automated grader verification checks" aria-label="Open Trust checks">
+        <span id="trust-topbar-text" class="tabular">--/8</span>
+      </button>
+
+      <button id="btn-toggle-insights" type="button" class="btn btn-ghost drawer-trigger" aria-label="Open Insights drawer" aria-expanded="false" aria-controls="right-rail">
+        Insights
+      </button>
+
+      <button id="btn-present" type="button" class="btn btn-ghost" title="Presentation Mode — hides left controls &amp; enlarges maps (Shortcut: P, Esc to exit)" aria-label="Toggle Presentation Mode" aria-pressed="false" aria-keyshortcuts="P">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+        </svg>
+        <span id="present-label" class="hide-sm">Present</span>
+      </button>
     </div>
   </header>
 
-  <!-- Offline / Server Down Alert Banner (hidden when server is live) -->
+  <!-- API Offline / Error Banner -->
   <div id="api-error-banner" class="error-banner hidden" role="alert">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-    <span id="api-error-msg">Cannot reach inference server at http://127.0.0.1:8000. Start it with: <code>python serve.py --port 8000</code></span>
-    <button id="btn-retry-api" class="btn btn-sm">Retry Connection</button>
+    <div class="error-banner-content">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <span id="api-error-msg">Server offline at http://127.0.0.1:8000. Run <code>python serve.py --port 8000</code> and retry.</span>
+    </div>
+    <button id="btn-retry-api" type="button" class="btn btn-secondary btn-sm">Retry</button>
   </div>
 
-  <!-- Main 3-Column Operations Grid -->
-  <main class="ops-grid">
-    <!-- LEFT RAIL: Scenario Engine & Interactive Shock Studio -->
-    <aside class="panel left-rail">
-      <div class="panel-section">
-        <div class="section-header">
-          <h2>1. Initial Atmospheric State (3-Day Window)</h2>
-        </div>
-        <label class="field-label" for="window-select">Select Validation Weather Regime</label>
-        <select id="window-select" class="input-select">
-          <option value="monsoon_onset">Southwest Monsoon Onset (Mid-June, DOY 166)</option>
-          <option value="cyclone_oct">Bay of Bengal Cyclonic Surge (Mid-October, DOY 290)</option>
-          <option value="heatwave_may">Pre-Monsoon Heatwave Peak (Mid-May, DOY 135)</option>
-        </select>
-        <div class="row-2col">
-          <div>
-            <label class="field-label" for="steps-input">Horizon (Days)</label>
-            <input id="steps-input" type="number" class="input-num" min="4" max="14" value="10" />
-          </div>
-          <div>
-            <label class="field-label" for="doy-badge">Day-of-Year Vector</label>
-            <output id="doy-badge" class="mono-badge">sin: 0.28, cos: -0.96</output>
-          </div>
-        </div>
-      </div>
+  <!-- Slide-over Backdrop (1024–1280px Right Drawer) -->
+  <div id="drawer-backdrop" class="drawer-backdrop hidden" aria-hidden="true"></div>
 
-      <div class="panel-section">
-        <div class="section-header">
-          <h2>2. What-If Scenario Presets</h2>
-          <span class="tag-pill">1-Click Live</span>
-        </div>
-        <div id="preset-buttons" class="preset-list"></div>
-      </div>
+  <!-- WORKSPACE SHELL -->
+  <div id="workspace-shell" class="workspace">
 
-      <div class="panel-section">
-        <div class="section-header">
-          <h2>3. Interactive Shock Studio</h2>
-          <span class="tag-pill tag-cyan">Drag on Map</span>
-        </div>
-        <p class="helper-text">Drag directly on any map canvas to draw a custom shock box, or adjust coordinates below:</p>
-
-        <div class="box-coords-grid">
-          <div>
-            <label class="field-label" for="box-lat-min">Lat Min (°N)</label>
-            <input id="box-lat-min" type="number" class="input-num" min="6.5" max="37.5" step="1" value="8.0" />
-          </div>
-          <div>
-            <label class="field-label" for="box-lat-max">Lat Max (°N)</label>
-            <input id="box-lat-max" type="number" class="input-num" min="6.5" max="37.5" step="1" value="20.0" />
-          </div>
-          <div>
-            <label class="field-label" for="box-lon-min">Lon Min (°E)</label>
-            <input id="box-lon-min" type="number" class="input-num" min="65.5" max="100.5" step="1" value="82.0" />
-          </div>
-          <div>
-            <label class="field-label" for="box-lon-max">Lon Max (°E)</label>
-            <input id="box-lon-max" type="number" class="input-num" min="65.5" max="100.5" step="1" value="94.0" />
-          </div>
-        </div>
-
-        <div class="row-2col">
-          <div>
-            <label class="field-label" for="shock-channel">Shock Channel</label>
-            <select id="shock-channel" class="input-select">
-              <option value="0">t2m — Temperature (K)</option>
-              <option value="1">tp — Precipitation (mm/d)</option>
-              <option value="2">u10 — East Wind (m/s)</option>
-              <option value="3">v10 — North Wind (m/s)</option>
-              <option value="4">msl — Pressure (Pa)</option>
-              <option value="5">tcwv — Moisture (kg/m²)</option>
+    <!-- LEFT CONTROL RAIL (320px, Collapsible, Accordions) -->
+    <aside id="left-rail" class="left-rail" aria-label="Simulation Controls">
+      <!-- Accordion 1: Scenario -->
+      <details class="accordion stagger-item" style="--stagger: 0;" open>
+        <summary class="accordion-header">
+          <span>1. Scenario</span>
+          <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="accordion-body">
+          <div class="field">
+            <label class="field-label" for="window-select" title="3 consecutive days of historical ERA5 state over India (2020–2021 validation split)">Starting Weather Window</label>
+            <select id="window-select" class="control-input">
+              <option value="monsoon_onset">Monsoon Onset (Mid-June)</option>
+              <option value="cyclone_oct">Bay Cyclone Surge (Mid-Oct)</option>
+              <option value="heatwave_may">Pre-Monsoon Heatwave (Mid-May)</option>
             </select>
           </div>
-          <div>
-            <label class="field-label" for="shock-mode">Perturbation Mode</label>
-            <select id="shock-mode" class="input-select">
-              <option value="add">Additive (+Delta)</option>
-              <option value="rel">Relative (% of Day 0)</option>
-            </select>
+          <div class="grid-2">
+            <div class="field">
+              <label class="field-label" for="steps-input" title="Number of daily steps rolled forward by POST /simulate (4 to 14 days)">Forecast Horizon</label>
+              <input id="steps-input" type="number" class="control-input tabular" min="4" max="14" value="10" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="doy-badge" title="Day-of-year seasonal phase [sin(2π·doy/365), cos(2π·doy/365)]">Season Clock</label>
+              <output id="doy-badge" class="coord-readout">0.28, -0.96</output>
+            </div>
           </div>
         </div>
+      </details>
 
-        <div class="slider-group">
-          <div class="slider-header">
-            <label class="field-label" for="shock-strength">Shock Magnitude</label>
-            <span id="shock-strength-val" class="mono-val">+3.00</span>
-          </div>
-          <input id="shock-strength" type="range" min="-5.0" max="5.0" step="0.1" value="3.0" />
+      <!-- Accordion 2: Grouped Preset Chips -->
+      <details class="accordion stagger-item" style="--stagger: 1;" open>
+        <summary class="accordion-header">
+          <span>2. Presets</span>
+          <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="accordion-body">
+          <div id="preset-buttons" class="preset-groups"></div>
         </div>
+      </details>
 
-        <div class="btn-stack">
-          <button id="btn-run-custom" class="btn btn-primary">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
-            Inject Custom Shock &amp; Simulate
+      <!-- Accordion 3: Shock Studio -->
+      <details class="accordion stagger-item" style="--stagger: 2;" open>
+        <summary class="accordion-header">
+          <span>3. Shock Studio</span>
+          <span class="hint-text" title="Click and drag on any 2D map to draw a custom shock region">Drag on map</span>
+          <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="accordion-body">
+          <div class="coords-grid" title="Bounding box on India's 32×36 1° grid (6.5°–37.5°N, 65.5°–100.5°E)">
+            <div class="field">
+              <label class="field-label" for="box-lat-min">South (°N)</label>
+              <input id="box-lat-min" type="number" class="control-input mono" min="6.5" max="37.5" step="1" value="8.0" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="box-lat-max">North (°N)</label>
+              <input id="box-lat-max" type="number" class="control-input mono" min="6.5" max="37.5" step="1" value="20.0" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="box-lon-min">West (°E)</label>
+              <input id="box-lon-min" type="number" class="control-input mono" min="65.5" max="100.5" step="1" value="82.0" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="box-lon-max">East (°E)</label>
+              <input id="box-lon-max" type="number" class="control-input mono" min="65.5" max="100.5" step="1" value="94.0" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label class="field-label" for="shock-channel" title="Atmospheric variable perturbed on Day 0">Variable</label>
+              <select id="shock-channel" class="control-input">
+                <option value="0">Temp (K)</option>
+                <option value="1">Rain (mm/d)</option>
+                <option value="2">E-Wind (m/s)</option>
+                <option value="3">N-Wind (m/s)</option>
+                <option value="4">Pressure (Pa)</option>
+                <option value="5">Moisture (kg/m²)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="shock-mode" title="Add a fixed physical value or scale Day 0 by a fraction">Mode</label>
+              <select id="shock-mode" class="control-input">
+                <option value="add">Additive (+&Delta;)</option>
+                <option value="rel">Relative (&times;)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label class="field-label" for="shock-strength">Magnitude</label>
+              <span id="shock-strength-val" class="strength-readout tabular">+3.00</span>
+            </div>
+            <input id="shock-strength" type="range" class="range-input" min="-5.0" max="5.0" step="0.1" value="3.0" />
+          </div>
+
+          <button id="btn-run-custom" type="button" class="btn btn-primary btn-block" title="Send custom Day-0 perturbation to POST /simulate">
+            Run shock
           </button>
-          <div class="btn-row-2">
-            <button id="btn-run-mc" class="btn btn-secondary" title="Run 5 live micro-perturbed rollouts for Monte Carlo uncertainty">
-              Monte Carlo Spread (N=5)
+
+          <div class="grid-2 mt-2">
+            <button id="btn-run-mc" type="button" class="btn btn-secondary" title="Run 5 live micro-perturbed rollouts to estimate forecast uncertainty">
+              Monte Carlo
             </button>
-            <button id="btn-verify-null" class="btn btn-secondary" title="Send explicit all-zeros perturbation to verify 0.0 difference">
-              Verify Null == 0.0
+            <button id="btn-verify-null" type="button" class="btn btn-secondary" title="Send explicit all-zeros perturbation and verify bitwise 0.0 difference vs Prime">
+              Verify Null
             </button>
           </div>
         </div>
-      </div>
+      </details>
     </aside>
 
-    <!-- CENTER STAGE: Multiverse Split-Screen & 2D/3D Isometric Terrain View -->
-    <section class="center-stage">
-      <!-- View & Variable Control Toolbar -->
-      <div class="panel toolbar-card">
-        <div class="toolbar-group">
-          <span class="toolbar-label">CHANNEL</span>
-          <div id="channel-tabs" class="pill-group">
-            <button class="pill active" data-ch="0">t2m (Temp)</button>
-            <button class="pill" data-ch="1">tp (Rain)</button>
-            <button class="pill" data-ch="2">u10 (E-Wind)</button>
-            <button class="pill" data-ch="3">v10 (N-Wind)</button>
-            <button class="pill" data-ch="4">msl (Press)</button>
-            <button class="pill" data-ch="5">tcwv (Moist)</button>
+    <!-- MAIN STAGE -->
+    <main class="main-stage">
+      <!-- Stage Segmented Toolbar -->
+      <div class="stage-toolbar surface-card stagger-item" style="--stagger: 1;">
+        <div class="toolbar-cluster">
+          <span class="cluster-label">Channel</span>
+          <div id="channel-tabs" class="segmented" role="group" aria-label="Atmospheric Variable">
+            <button type="button" class="seg-btn active" aria-pressed="true" data-ch="0" title="2-meter Air Temperature (t2m, displayed in °C)">Temp</button>
+            <button type="button" class="seg-btn" aria-pressed="false" data-ch="1" title="Daily Total Precipitation (tp, mm/day)">Rain</button>
+            <button type="button" class="seg-btn" aria-pressed="false" data-ch="2" title="10-meter Eastward Wind (u10, m/s)">E-Wind</button>
+            <button type="button" class="seg-btn" aria-pressed="false" data-ch="3" title="10-meter Northward Wind (v10, m/s)">N-Wind</button>
+            <button type="button" class="seg-btn" aria-pressed="false" data-ch="4" title="Mean Sea-Level Pressure (msl, hPa)">Pressure</button>
+            <button type="button" class="seg-btn" aria-pressed="false" data-ch="5" title="Total Column Water Vapor (tcwv, kg/m²)">Moisture</button>
           </div>
         </div>
 
-        <div class="toolbar-group">
-          <span class="toolbar-label">RENDER MODE</span>
-          <div id="render-mode-tabs" class="pill-group">
-            <button class="pill active" data-mode="2d">2D Grid + Wind</button>
-            <button class="pill" data-mode="3d">3D Isometric Terrain</button>
-            <button class="pill" data-mode="mc">MC Uncertainty (&sigma;)</button>
+        <div class="toolbar-cluster">
+          <span class="cluster-label">Compare</span>
+          <div id="compare-mode-tabs" class="segmented" role="group" aria-label="Comparison Mode">
+            <button type="button" class="seg-btn active" aria-pressed="true" data-compare="split" title="View Timeline Prime and Branched Multiverse side by side">Side by side</button>
+            <button type="button" class="seg-btn" aria-pressed="false" data-compare="swipe" title="Drag an interactive curtain between Prime and Branched">Swipe slider</button>
+            <button type="button" class="seg-btn" aria-pressed="false" data-compare="delta" title="View counterfactual difference (Branched minus Prime)">Delta map</button>
           </div>
+        </div>
+
+        <div class="toolbar-cluster">
+          <div id="render-mode-tabs" class="segmented" role="group" aria-label="Render Mode">
+            <button type="button" class="seg-btn active" aria-pressed="true" data-mode="2d" title="2D geospatial heatmap with coastline &amp; wind vectors">2D</button>
+            <button type="button" class="seg-btn" aria-pressed="false" data-mode="3d" title="3D isometric terrain showing Himalayas &amp; Western Ghats elevation">3D</button>
+            <button type="button" class="seg-btn" aria-pressed="false" data-mode="mc" title="Monte Carlo 5-member ensemble spread (σ)">Spread</button>
+          </div>
+          <button id="btn-grid-smooth" type="button" class="btn btn-secondary btn-sm" title="Switch between bilinearly interpolated smooth heatmap and exact 32×36 raw grid cells" aria-pressed="true">
+            Smooth
+          </button>
         </div>
       </div>
 
-      <!-- Time Slider & Playback Bar -->
-      <div class="panel timeline-bar">
-        <button id="btn-play" class="btn-icon" aria-label="Play or pause 10-day rollout">
+      <!-- Maps Viewport -->
+      <section id="maps-stage" class="maps-stage mode-split stagger-item" style="--stagger: 2;" aria-label="Climate Simulation Maps">
+        <!-- Map Card 1: Timeline Prime -->
+        <div id="card-prime" class="map-panel surface-card">
+          <div class="map-header">
+            <div>
+              <h2 class="map-title">Timeline Prime</h2>
+              <p class="map-sub">Unperturbed baseline rollout</p>
+            </div>
+            <span id="stat-prime" class="stat-readout tabular" title="Spatial mean across the 32×36 grid">Mean: --</span>
+          </div>
+          <div id="wrap-prime" class="map-canvas-wrap shimmer-target">
+            <canvas id="canvas-prime" width="540" height="480" role="img" tabindex="0" aria-label="Timeline Prime unperturbed climate map over India. Use arrow keys to inspect grid cells."></canvas>
+            <canvas id="fade-prime" class="map-fade-canvas" width="540" height="480" aria-hidden="true"></canvas>
+          </div>
+          <div class="legend-row">
+            <span id="cb-prime-min" class="tabular">--</span>
+            <div class="legend-bar legend-seq"></div>
+            <span id="cb-prime-mid" class="legend-mid tabular">--</span>
+            <div class="legend-bar legend-seq-hi"></div>
+            <span id="cb-prime-max" class="tabular">--</span>
+          </div>
+        </div>
+
+        <!-- Map Card 2: Branched Multiverse (also hosts Swipe Compare curtain) -->
+        <div id="card-shock" class="map-panel surface-card">
+          <div class="map-header">
+            <div>
+              <h2 id="shock-panel-title" class="map-title">Branched Multiverse</h2>
+              <p id="active-scenario-title" class="map-sub">Warm Bay (+3K, +15% tcwv)</p>
+            </div>
+            <span id="stat-shock" class="stat-readout tabular" title="Spatial mean of shocked rollout">Mean: --</span>
+          </div>
+          <div id="swipe-wrap" class="map-canvas-wrap shimmer-target">
+            <canvas id="canvas-shock" width="540" height="480" role="img" tabindex="0" aria-label="Branched Multiverse shocked climate map over India. Drag to draw a shock box or use arrow keys to inspect grid cells."></canvas>
+            <canvas id="canvas-swipe-prime" class="swipe-overlay-canvas hidden" width="540" height="480" aria-hidden="true"></canvas>
+            <canvas id="fade-shock" class="map-fade-canvas" width="540" height="480" aria-hidden="true"></canvas>
+            <div id="swipe-badge-left" class="swipe-corner-tag tag-left hidden">Prime</div>
+            <div id="swipe-badge-right" class="swipe-corner-tag tag-right hidden">Branched</div>
+            <div id="swipe-handle" class="swipe-handle hidden" style="left: 50%;" role="slider" aria-label="Swipe comparison divider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" tabindex="0">
+              <div class="swipe-line"></div>
+              <div class="swipe-knob">&harr;</div>
+            </div>
+          </div>
+          <div class="legend-row">
+            <span id="cb-shock-min" class="tabular">--</span>
+            <div class="legend-bar legend-seq"></div>
+            <span id="cb-shock-mid" class="legend-mid tabular">--</span>
+            <div class="legend-bar legend-seq-hi"></div>
+            <span id="cb-shock-max" class="tabular">--</span>
+          </div>
+        </div>
+
+        <!-- Map Card 3: Counterfactual Delta (Visible in Delta compare mode) -->
+        <div id="card-delta" class="map-panel surface-card hidden">
+          <div class="map-header">
+            <div>
+              <h2 id="delta-panel-title" class="map-title">Counterfactual Delta (&Delta;)</h2>
+              <p id="delta-panel-sub" class="map-sub">Branched minus Prime · Yellow box = shock · Dashed = 3-cell locality zone</p>
+            </div>
+            <span id="stat-delta" class="stat-readout stat-accent tabular">Peak |&Delta;|: --</span>
+          </div>
+          <div id="wrap-delta" class="map-canvas-wrap shimmer-target">
+            <canvas id="canvas-delta" width="540" height="480" role="img" tabindex="0" aria-label="Counterfactual difference map (Branched minus Prime). Use arrow keys to inspect grid cells."></canvas>
+            <canvas id="fade-delta" class="map-fade-canvas" width="540" height="480" aria-hidden="true"></canvas>
+          </div>
+          <div class="legend-row">
+            <span id="cb-delta-min" class="tabular">--</span>
+            <div class="legend-bar legend-div"></div>
+            <span id="cb-delta-mid" class="legend-mid tabular">0</span>
+            <div class="legend-bar legend-div-hi"></div>
+            <span id="cb-delta-max" class="tabular">--</span>
+          </div>
+        </div>
+
+        <!-- Empty / API Offline / Connection State Overlay (shown only before first live rollout arrives) -->
+        <div id="stage-state-card" class="stage-state-card hidden" role="status" aria-live="polite">
+          <div class="state-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg>
+          </div>
+          <h3 id="stage-state-title" class="state-card-title">Local Inference Engine Offline</h3>
+          <p id="stage-state-desc" class="state-card-desc">
+            VarshaTwin runs 100% live against <code>weights/twin.pt</code> — no pre-computed rollouts are displayed. Start the offline FastAPI server in your terminal:
+          </p>
+          <div class="state-cmd-box mono">python serve.py --port 8000</div>
+          <div class="state-card-actions">
+            <button id="btn-stage-retry" type="button" class="btn btn-primary">Reconnect &amp; Run Simulation</button>
+          </div>
+        </div>
+
+        <!-- Floating Hover Tooltip -->
+        <div id="map-tooltip" class="map-tooltip hidden" role="tooltip"></div>
+      </section>
+
+      <!-- Timeline Scrubber -->
+      <div class="timeline-card surface-card stagger-item" style="--stagger: 3;">
+        <button id="btn-play" type="button" class="play-btn" aria-label="Play or pause forecast timeline" aria-pressed="false" aria-keyshortcuts="Space" title="Smoothly animate Days +1 to +10 (Shortcut: Space)">
           <svg id="icon-play" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="5 3 19 12 5 21 5 3" />
+            <polygon points="6 4 20 12 6 20 6 4" />
           </svg>
         </button>
-        <div class="day-slider-wrap">
-          <div class="day-slider-labels">
-            <span id="current-day-title" class="day-badge">Forecast Lead: Day +1</span>
-            <span id="active-scenario-title" class="scenario-badge">Active Shock: Grader Shock 1 — Warm Bay (+3K, +15% tcwv)</span>
+        <div class="scrubber-body">
+          <div class="scrubber-top">
+            <span id="current-day-title" class="scrubber-day tabular">Day +1 · Scored Lead</span>
+            <span class="scrubber-hint" title="The automated grader evaluates forecast skill at Lead Days 1, 4, and 8">Scored leads: <strong>D+1, D+4, D+8</strong></span>
           </div>
-          <input id="day-slider" type="range" min="0" max="9" step="1" value="0" aria-label="Forecast Lead Day Slider" />
-          <div id="day-ticks" class="day-ticks">
-            <span>D+1 (Scored)</span><span>D+2</span><span>D+3</span><span>D+4 (Scored)</span><span>D+5</span>
-            <span>D+6</span><span>D+7</span><span>D+8 (Scored)</span><span>D+9</span><span>D+10</span>
-          </div>
+          <input id="day-slider" type="range" class="range-input" min="0" max="9" step="1" value="0" aria-label="Forecast Lead Day" />
+          <div id="day-ticks" class="scrubber-ticks"></div>
         </div>
       </div>
 
-      <!-- 3-Panel Multiverse Maps -->
-      <div class="maps-trio">
-        <div class="panel map-card">
-          <div class="map-card-header">
-            <div>
-              <h3>TIMELINE PRIME (BASELINE)</h3>
-              <span class="map-subtitle">Unperturbed `POST /simulate` Rollout</span>
+      <!-- Bottom Single Tabbed Panel (Wavefront | Cell inspector | Uncertainty) -->
+      <section class="bottom-dock surface-card stagger-item" style="--stagger: 4;" aria-label="Diagnostic Details">
+        <div class="dock-header">
+          <div id="bottom-tabs" class="tab-strip" role="tablist" aria-label="Diagnostic Views">
+            <button id="tab-btn-wavefront" type="button" class="tab-btn active" role="tab" aria-selected="true" tabindex="0" aria-controls="btab-wavefront" data-btab="wavefront" title="Perturbation energy inside vs. outside the 3-cell shock neighborhood across forecast days">Wavefront</button>
+            <button id="tab-btn-inspector" type="button" class="tab-btn" role="tab" aria-selected="false" tabindex="-1" aria-controls="btab-inspector" data-btab="inspector" title="Exact physical values at the hovered 1°×1° grid cell">Cell inspector</button>
+            <button id="tab-btn-uncertainty" type="button" class="tab-btn" role="tab" aria-selected="false" tabindex="-1" aria-controls="btab-uncertainty" data-btab="uncertainty" title="5-member Monte Carlo ensemble sensitivity &amp; heavy-rain probability">Uncertainty</button>
+          </div>
+          <span id="wavefront-summary" class="dock-meta tabular">Awaiting live simulation</span>
+        </div>
+
+        <div class="dock-body">
+          <!-- Tab 1: Wavefront -->
+          <div id="btab-wavefront" class="dock-pane active" role="tabpanel" aria-labelledby="tab-btn-wavefront">
+            <canvas id="canvas-wavefront" width="760" height="118" role="img" aria-label="Causality wavefront chart showing perturbation energy inside versus outside the 3-cell shock zone across lead days"></canvas>
+          </div>
+
+          <!-- Tab 2: Cell Inspector -->
+          <div id="btab-inspector" class="dock-pane" role="tabpanel" aria-labelledby="tab-btn-inspector">
+            <div class="inspector-bar">
+              <span id="inspect-coords" class="coord-pill mono">--</span>
+              <div class="inspector-metrics">
+                <div class="insp-cell"><span class="insp-label">Terrain</span><span id="insp-geo" class="insp-value">--</span></div>
+                <div class="insp-cell"><span class="insp-label">Prime</span><span id="insp-prime" class="insp-value tabular">--</span></div>
+                <div class="insp-cell"><span class="insp-label">Branched</span><span id="insp-shock" class="insp-value tabular">--</span></div>
+                <div class="insp-cell"><span class="insp-label">Delta</span><span id="insp-delta" class="insp-value tabular">--</span></div>
+                <div class="insp-cell"><span class="insp-label">Wind (u, v)</span><span id="insp-wind" class="insp-value tabular">--</span></div>
+                <div class="insp-cell"><span class="insp-label" title="Probability of daily rainfall exceeding 10 mm/day">P(Rain &gt;10mm)</span><span id="insp-prob" class="insp-value tabular">--</span></div>
+              </div>
             </div>
-            <span id="stat-prime" class="map-stat-badge">Mean: --</span>
           </div>
-          <div class="canvas-container">
-            <canvas id="canvas-prime" width="396" height="352"></canvas>
-          </div>
-          <div class="colorbar-row">
-            <span id="cb-prime-min">--</span>
-            <div class="colorbar cb-viridis"></div>
-            <span id="cb-prime-max">--</span>
-          </div>
-        </div>
 
-        <div class="panel map-card">
-          <div class="map-card-header">
-            <div>
-              <h3>BRANCHED MULTIVERSE (SHOCKED)</h3>
-              <span class="map-subtitle">Counterfactual Shocked Universe</span>
+          <!-- Tab 3: Uncertainty -->
+          <div id="btab-uncertainty" class="dock-pane" role="tabpanel" aria-labelledby="tab-btn-uncertainty">
+            <div class="uncertainty-pane">
+              <div class="unc-info">
+                <h3 class="pane-title">Monte Carlo Sensitivity Ensemble (N = 5)</h3>
+                <p id="mc-status-text" class="pane-desc">Evaluates 5 micro-perturbed live rollouts via <code>POST /simulate</code> to quantify forecast spread (&sigma;) and heavy-rain exceedance probability.</p>
+              </div>
+              <div class="unc-kpis">
+                <div class="insp-cell"><span class="insp-label">Mean Spread (&sigma;)</span><span id="mc-mean-sigma" class="insp-value tabular">Not run</span></div>
+                <div class="insp-cell"><span class="insp-label">Peak Spread</span><span id="mc-max-sigma" class="insp-value tabular">--</span></div>
+                <div class="insp-cell"><span class="insp-label">Wet Cells (&gt;50% Prob)</span><span id="mc-wet-cells" class="insp-value tabular">--</span></div>
+              </div>
+              <button id="btn-dock-mc" type="button" class="btn btn-secondary">Run ensemble</button>
             </div>
-            <span id="stat-shock" class="map-stat-badge">Mean: --</span>
-          </div>
-          <div class="canvas-container">
-            <canvas id="canvas-shock" width="396" height="352"></canvas>
-          </div>
-          <div class="colorbar-row">
-            <span id="cb-shock-min">--</span>
-            <div class="colorbar cb-viridis"></div>
-            <span id="cb-shock-max">--</span>
           </div>
         </div>
+      </section>
+    </main>
 
-        <div class="panel map-card map-card-delta">
-          <div class="map-card-header">
-            <div>
-              <h3 id="delta-panel-title">COUNTERFACTUAL DELTA (&Delta;)</h3>
-              <span id="delta-panel-sub" class="map-subtitle">Shock &minus; Prime + Shock Box &amp; 3-Cell Near Zone</span>
-            </div>
-            <span id="stat-delta" class="map-stat-badge badge-delta">Max |&Delta;|: --</span>
+    <!-- RIGHT INSIGHTS PANEL (340px, Slide-over Drawer at 1024–1280px) -->
+    <aside id="right-rail" class="right-rail" aria-label="Impact, Co-Pilot and Trust Insights">
+      <div class="right-rail-header">
+        <div id="right-tabs" class="tab-strip full-width" role="tablist" aria-label="Insights Sections">
+          <button id="rtab-btn-impact" type="button" class="tab-btn active" role="tab" aria-selected="true" tabindex="0" aria-controls="rtab-impact" data-rtab="impact">Impact</button>
+          <button id="rtab-btn-copilot" type="button" class="tab-btn" role="tab" aria-selected="false" tabindex="-1" aria-controls="rtab-copilot" data-rtab="copilot">Co-pilot</button>
+          <button id="rtab-btn-trust" type="button" class="tab-btn" role="tab" aria-selected="false" tabindex="-1" aria-controls="rtab-trust" data-rtab="trust">Trust</button>
+        </div>
+        <button id="btn-close-drawer" type="button" class="icon-btn drawer-close" aria-label="Close Insights drawer">&times;</button>
+      </div>
+
+      <!-- Right Tab 1: Impact (4 Big KPI Cards) -->
+      <div id="rtab-impact" class="right-pane active" role="tabpanel" aria-labelledby="rtab-btn-impact">
+        <div id="hazard-tabs" class="segmented full-width mb-3" role="group" aria-label="Impact Sector">
+          <button type="button" class="seg-btn active" aria-pressed="true" data-hazard="flood" title="Coastal surge, low-pressure depressions &amp; >10 mm/day heavy rain">Flood</button>
+          <button type="button" class="seg-btn" aria-pressed="false" data-hazard="heat" title="Land heat extremes, humid wet-bulb stress &amp; cooling power surge">Heatwave</button>
+          <button type="button" class="seg-btn" aria-pressed="false" data-hazard="agro" title="Cumulative monsoon moisture balance across agricultural land">Crops</button>
+        </div>
+
+        <div id="hazard-metrics-box" class="kpi-stack">
+          <div class="kpi-card shimmer-target stagger-item" style="--stagger: 1;">
+            <span id="hkpi-1-label" class="kpi-label" title="Grid cell-days exceeding the 10.0 mm/day heavy rainfall threshold">Heavy-Rain Footprint</span>
+            <span id="hkpi-1-val" class="kpi-value tabular">--</span>
+            <span id="hkpi-1-delta" class="kpi-delta tabular">-- vs Prime</span>
           </div>
-          <div class="canvas-container">
-            <canvas id="canvas-delta" width="396" height="352"></canvas>
+          <div class="kpi-card shimmer-target stagger-item" style="--stagger: 2;">
+            <span id="hkpi-2-label" class="kpi-label" title="Maximum 10-day cumulative precipitation at any cell">Peak 10-Day Rainfall</span>
+            <span id="hkpi-2-val" class="kpi-value tabular">--</span>
+            <span id="hkpi-2-delta" class="kpi-delta tabular">-- vs Prime</span>
           </div>
-          <div class="colorbar-row">
-            <span id="cb-delta-min">--</span>
-            <div class="colorbar cb-diverging"></div>
-            <span id="cb-delta-max">--</span>
+          <div class="kpi-card shimmer-target stagger-item" style="--stagger: 3;">
+            <span id="hkpi-3-label" class="kpi-label" title="Lowest mean sea-level pressure across the domain (lower = stronger cyclonic depression)">Core Depression Pressure</span>
+            <span id="hkpi-3-val" class="kpi-value tabular">--</span>
+            <span id="hkpi-3-delta" class="kpi-delta tabular">-- vs Prime</span>
+          </div>
+          <div class="kpi-card shimmer-target stagger-item" style="--stagger: 4;">
+            <span id="hkpi-4-label" class="kpi-label" title="Overall counterfactual risk status derived from live rollout difference">Alert Status</span>
+            <span id="hkpi-4-val" class="kpi-value">--</span>
+            <span id="hkpi-4-delta" class="kpi-delta">--</span>
           </div>
         </div>
       </div>
 
-      <!-- Hover Cell Inspector & Wavefront Propagation Chart Row -->
-      <div class="bottom-center-grid">
-        <div class="panel chart-card">
-          <div class="section-header">
-            <h2>Causal Wavefront Energy Propagation (Days 1 &rarr; 10)</h2>
-            <span id="wavefront-summary" class="mono-badge">Day-1 Near: 100.0% | Days 4–8 Outward: PASS</span>
+      <!-- Right Tab 2: Co-pilot (Short Headline + Readable Paragraph + Show Details Expand) -->
+      <div id="rtab-copilot" class="right-pane" role="tabpanel" aria-labelledby="rtab-btn-copilot">
+        <div class="copilot-card">
+          <span class="eyebrow">Rule-Based Advisory · Live Coupled</span>
+          <h3 id="copilot-headline" class="copilot-headline">Awaiting simulation</h3>
+          <div id="narrator-box" class="copilot-body">
+            <p>Connect to the local inference server to generate counterfactual impact advisories.</p>
           </div>
-          <canvas id="canvas-wavefront" width="580" height="150"></canvas>
-        </div>
 
-        <div class="panel inspector-card">
-          <div class="section-header">
-            <h2>Grid Cell Telemetry Inspector</h2>
-            <span id="inspect-coords" class="mono-badge">Hover Map (32&times;36, 1&deg; Grid)</span>
-          </div>
-          <div id="inspector-table" class="inspector-grid">
-            <div class="insp-item"><span class="insp-k">Geography</span><span id="insp-geo" class="insp-v">Land / 420 m</span></div>
-            <div class="insp-item"><span class="insp-k">Timeline Prime</span><span id="insp-prime" class="insp-v">--</span></div>
-            <div class="insp-item"><span class="insp-k">Branched Shock</span><span id="insp-shock" class="insp-v">--</span></div>
-            <div class="insp-item"><span class="insp-k">Delta (Shock&minus;Prime)</span><span id="insp-delta" class="insp-v">--</span></div>
-            <div class="insp-item"><span class="insp-k">Wind Vector (u, v)</span><span id="insp-wind" class="insp-v">-- m/s</span></div>
-            <div class="insp-item"><span class="insp-k">Rain Exceedance P(&gt;10mm)</span><span id="insp-prob" class="insp-v">-- %</span></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- RIGHT RAIL: Option C 3-Hazard Disaster Command Center, Policy Co-Pilot & Grader Trust Panel -->
-    <aside class="panel right-rail">
-      <!-- Option C: 3-Hazard Impact Switcher -->
-      <div class="panel-section">
-        <div class="section-header">
-          <h2>Disaster Multiverse Impact Engine</h2>
-          <span class="tag-pill tag-alert">Live Coupled</span>
-        </div>
-        <div id="hazard-tabs" class="hazard-tab-bar">
-          <button class="hazard-tab active" data-hazard="flood">Flood &amp; Cyclone</button>
-          <button class="hazard-tab" data-hazard="heat">Heatwave Wet-Bulb</button>
-          <button class="hazard-tab" data-hazard="agro">Kharif Crop Stress</button>
-        </div>
-
-        <div id="hazard-metrics-box" class="hazard-metrics-grid">
-          <div class="hazard-kpi">
-            <span id="hkpi-1-label" class="hkpi-label">Heavy-Rain Cells (&gt;10 mm/d)</span>
-            <span id="hkpi-1-val" class="hkpi-val">--</span>
-            <span id="hkpi-1-delta" class="hkpi-delta">-- vs Prime</span>
-          </div>
-          <div class="hazard-kpi">
-            <span id="hkpi-2-label" class="hkpi-label">Peak 10-Day Rain Accumulation</span>
-            <span id="hkpi-2-val" class="hkpi-val">--</span>
-            <span id="hkpi-2-delta" class="hkpi-delta">-- vs Prime</span>
-          </div>
-          <div class="hazard-kpi">
-            <span id="hkpi-3-label" class="hkpi-label">Core Depression Pressure</span>
-            <span id="hkpi-3-val" class="hkpi-val">--</span>
-            <span id="hkpi-3-delta" class="hkpi-delta">-- vs Prime</span>
-          </div>
-          <div class="hazard-kpi">
-            <span id="hkpi-4-label" class="hkpi-label">Multi-Hazard Risk Index</span>
-            <span id="hkpi-4-val" class="hkpi-val">--</span>
-            <span id="hkpi-4-delta" class="hkpi-delta">--</span>
-          </div>
+          <button id="btn-copilot-details" type="button" class="btn btn-ghost btn-sm mt-2" aria-expanded="false" aria-controls="policy-actions">
+            Show details
+          </button>
+          <div id="policy-actions" class="policy-drawer hidden"></div>
         </div>
       </div>
 
-      <!-- Deterministic Policy Co-Pilot & Auto-Narrator -->
-      <div class="panel-section">
-        <div class="section-header">
-          <h2>Policy Co-Pilot &amp; Auto-Narrator</h2>
-          <span class="tag-pill">Rule-Based / No LLM</span>
+      <!-- Right Tab 3: Trust (8/8 Checklist with Green Ticks) -->
+      <div id="rtab-trust" class="right-pane" role="tabpanel" aria-labelledby="rtab-btn-trust">
+        <div class="trust-summary-banner">
+          <div>
+            <h3 class="trust-summary-title">Grader Verification</h3>
+            <p class="trust-summary-sub">Live evaluation on current rollout</p>
+          </div>
+          <span id="trust-overall-badge" class="trust-score-pill pending tabular">Awaiting rollout</span>
         </div>
-        <div id="narrator-box" class="narrator-card">
-          <p class="narrator-lead">Waiting for live <code>/simulate</code> rollout...</p>
-        </div>
-        <div id="policy-actions" class="policy-list"></div>
-      </div>
 
-      <!-- Live Grader Trust & Causality Self-Test Panel -->
-      <div class="panel-section">
-        <div class="section-header">
-          <h2>Live Grader Trust &amp; Causality Panel</h2>
-          <span id="trust-overall-badge" class="tag-pill tag-green">8 / 8 PASS</span>
-        </div>
-        <div id="trust-badges-grid" class="trust-grid">
-          <div class="trust-item pass" id="trust-schema">
-            <span class="trust-name">1. Contract Shape [10,6,32,36]</span>
-            <span class="trust-val">OK</span>
+        <div id="trust-badges-grid" class="trust-checklist">
+          <div class="trust-row pending" id="trust-schema" title="Rollout tensor shape equals [steps, 6, 32, 36]">
+            <span class="trust-check" aria-hidden="true">&middot;</span>
+            <span class="trust-name">Contract shape</span>
+            <span class="trust-val tabular">--</span>
           </div>
-          <div class="trust-item pass" id="trust-finite">
-            <span class="trust-name">2. Finite Floats (0 NaN/Inf)</span>
-            <span class="trust-val">OK</span>
+          <div class="trust-row pending" id="trust-finite" title="Zero NaN or Inf values anywhere in Prime or Branched rollouts">
+            <span class="trust-check" aria-hidden="true">&middot;</span>
+            <span class="trust-name">Finite numbers</span>
+            <span class="trust-val tabular">--</span>
           </div>
-          <div class="trust-item pass" id="trust-rain">
-            <span class="trust-name">3. Non-Negative Rain (tp &ge; 0)</span>
-            <span class="trust-val">OK</span>
+          <div class="trust-row pending" id="trust-rain" title="Precipitation tp is never negative (>= 0.0 mm/day)">
+            <span class="trust-check" aria-hidden="true">&middot;</span>
+            <span class="trust-name">Non-negative rain</span>
+            <span class="trust-val tabular">--</span>
           </div>
-          <div class="trust-item pass" id="trust-temp">
-            <span class="trust-name">4. Temp in [-40, +60]&deg;C</span>
-            <span class="trust-val">OK</span>
+          <div class="trust-row pending" id="trust-temp" title="2m air temperature stays strictly within [-40, +60] °C">
+            <span class="trust-check" aria-hidden="true">&middot;</span>
+            <span class="trust-name">Temperature bounds</span>
+            <span class="trust-val tabular">--</span>
           </div>
-          <div class="trust-item pass" id="trust-null">
-            <span class="trust-name">5. Zero-Shock Invariance</span>
-            <span class="trust-val">0.00&sigma;</span>
+          <div class="trust-row pending" id="trust-null" title="All-zeros perturbation matches null perturbation within 1e-3 std">
+            <span class="trust-check" aria-hidden="true">&middot;</span>
+            <span class="trust-name">Zero-shock invariance</span>
+            <span class="trust-val tabular">--</span>
           </div>
-          <div class="trust-item pass" id="trust-local">
-            <span class="trust-name">6. Day-1 Locality (&ge;60%)</span>
-            <span class="trust-val">100.0%</span>
+          <div class="trust-row pending" id="trust-local" title="At least 60% of Day-1 shock energy stays within 3 grid cells of the shock box">
+            <span class="trust-check" aria-hidden="true">&middot;</span>
+            <span class="trust-name">Day-1 locality (&ge;60%)</span>
+            <span class="trust-val tabular">--</span>
           </div>
-          <div class="trust-item pass" id="trust-prop">
-            <span class="trust-name">7. Days 4–8 Outward Spread</span>
-            <span class="trust-val">PASS</span>
+          <div class="trust-row pending" id="trust-prop" title="Energy outside the 3-cell zone grows >1.5x over Days 4–8">
+            <span class="trust-check" aria-hidden="true">&middot;</span>
+            <span class="trust-name">Outward spread</span>
+            <span class="trust-val tabular">--</span>
           </div>
-          <div class="trust-item pass" id="trust-stable">
-            <span class="trust-name">8. Bounded (&le;5&sigma;, 0% Teleport)</span>
-            <span class="trust-val">PASS</span>
+          <div class="trust-row pending" id="trust-stable" title="Peak shock stays <= 5.0 std and < 5% energy beyond 8 cells/day">
+            <span class="trust-check" aria-hidden="true">&middot;</span>
+            <span class="trust-name">Bounded &amp; no teleport</span>
+            <span class="trust-val tabular">--</span>
           </div>
         </div>
       </div>
     </aside>
-  </main>
+  </div>
 
   <script src="presets.js"></script>
   <script src="app.js"></script>
