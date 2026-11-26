@@ -9,13 +9,13 @@ A small, convolution-only neural twin of India's daily weather. It rolls forward
 - Live dashboard: Shock Studio, Multiverse Compare, Trust Panel, Impact Pack
 - Offline, CPU-only inference
 
-## Results (validation 2020-2021)
-| Day | Metric | Repeat yesterday | Climatology | VarshaTwin |
+## Results (Validation 2020–2021, 721 daily windows)
+| Lead Day | Metric | Repeat Yesterday | Climatology (2005–2019) | VarshaTwin |
 |---|---|---|---|---|
-| 1 | RMSE | [ ] | [ ] | [ ] |
-| 4 | RMSE | [ ] | [ ] | [ ] |
-| 8 | RMSE | [ ] | [ ] | [ ] |
-| 4 | Heavy-rain hit rate | [ ] | [ ] | [ ] |
+| Day 1 | Mean Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `1.03 / 6.33 / 1.09 / 1.11 / 198.4 / 3.75` | `1.76 / 6.78 / 1.66 / 1.46 / 282.0 / 6.47` | *[Step 4]* |
+| Day 4 | Mean Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `1.92 / 9.25 / 2.02 / 1.95 / 341.6 / 7.51` | `1.76 / 6.77 / 1.66 / 1.46 / 281.5 / 6.47` | *[Step 4]* |
+| Day 8 | Mean Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `2.25 / 9.36 / 2.23 / 1.99 / 378.9 / 8.35` | `1.76 / 6.77 / 1.66 / 1.46 / 281.4 / 6.47` | *[Step 4]* |
+| Day 1 / 4 / 8 | Heavy-Rain CSI (`tp > 10.0 mm/day`) | `0.4290 / 0.2176 / 0.2033` | `0.2673 / 0.2676 / 0.2678` | *[Step 4]* |
 
 ## Setup
 ```bash
