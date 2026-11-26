@@ -1,1 +1,4 @@
-weights/*.pt filter=lfs diff=lfs merge=lfs -text
+# Store sub-10MB weights directly in Git so offline containers without git-lfs always receive real binary weights (>1KB)
+*.nc binary
+*.pt binary
+*.npz binary
