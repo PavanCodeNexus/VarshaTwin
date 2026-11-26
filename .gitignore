@@ -1,0 +1,25 @@
+# Dataset & local reference kits (NEVER commit raw climate data or PDF problem statement)
+data/
+*.nc
+*.nc4
+*.grib
+*.grib2
+*.zarr
+yug-monsoon-kit/
+YD.pdf
+
+# Python & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Training logs & scratch runs
+runs/
+notebooks/.ipynb_checkpoints/
+.planning/
+*.log
+/tmp/
