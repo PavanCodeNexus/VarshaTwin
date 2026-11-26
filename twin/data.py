@@ -3,10 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import numpy as np
-import pandas as pd
 import torch
 from torch.utils.data import Dataset
-import xarray as xr
 
 CHANNELS = ("t2m", "tp", "u10", "v10", "msl", "tcwv")
 NC, NLAT, NLON = 6, 32, 36
@@ -67,6 +65,9 @@ def compute_climatology(data: np.ndarray, doy_idx: np.ndarray, smooth_days: int 
 
 def load_raw_dataset(nc_path: str | Path) -> dict[str, np.ndarray]:
     """Load india_climate_train.nc and return arrays for data, static fields, and time indices."""
+    import pandas as pd
+    import xarray as xr
+
     ds = xr.open_dataset(nc_path)
     data = np.asarray(ds["data"].values, dtype=np.float32)
     data[:, 1] = np.maximum(data[:, 1], 0.0)
