@@ -1,5 +1,5 @@
-/* VarshaTwin — Live-Coupled Climate Digital Twin Dashboard (Phases 1–3)
- * Plain HTML/CSS/JS · 100% Offline · Live POST /simulate · 60fps GPU Transitions
+/* VarshaTwin — Stitch Light-Theme Regional Insights + Live Multiverse Digital Twin
+ * Plain HTML/CSS/JS · 100% Offline · Live POST /simulate · Georeferenced India & 3D Globe
  */
 (function () {
   "use strict";
@@ -16,6 +16,94 @@
   const NLAT = 32;
   const NLON = 36;
 
+  // Georeferenced Indian States mapped to India's 32x36 ERA5 Grid (6.5°N–37.5°N, 65.5°E–100.5°E)
+  const INDIA_STATES = {
+    "Karnataka": {
+      lat_min: 12.0, lat_max: 17.5, lon_min: 74.0, lon_max: 78.0,
+      centerLat: 14.8, centerLon: 76.2,
+      basin: "Cauvery, Krishna & Tungabhadra",
+      cropZone: "Interior rabi pulses, coffee & coastal paddy",
+      terrainNote: "Western Ghats & Malnad slopes",
+    },
+    "Maharashtra": {
+      lat_min: 16.5, lat_max: 21.5, lon_min: 72.8, lon_max: 80.5,
+      centerLat: 19.2, centerLon: 75.8,
+      basin: "Godavari, Krishna & Koyna",
+      cropZone: "Konkan paddy, Marathwada cotton & soybean",
+      terrainNote: "Konkan coast & Sahyadri ghats",
+    },
+    "Kerala": {
+      lat_min: 8.5, lat_max: 12.5, lon_min: 75.0, lon_max: 77.5,
+      centerLat: 10.5, centerLon: 76.3,
+      basin: "Periyar, Bharathapuzha & Idukki",
+      cropZone: "Spice plantations, rubber & wetland paddy",
+      terrainNote: "Steep Western Ghats escarpment",
+    },
+    "Tamil Nadu": {
+      lat_min: 8.5, lat_max: 13.5, lon_min: 77.0, lon_max: 80.5,
+      centerLat: 11.1, centerLon: 78.7,
+      basin: "Cauvery Delta, Vaigai & Mettur",
+      cropZone: "Thanjavur delta paddy & irrigated millets",
+      terrainNote: "Coromandel coast & Nilgiri hills",
+    },
+    "Andhra Pradesh": {
+      lat_min: 13.5, lat_max: 18.5, lon_min: 78.0, lon_max: 84.5,
+      centerLat: 16.2, centerLon: 80.6,
+      basin: "Godavari & Krishna Delta",
+      cropZone: "Coastal delta paddy, chillies & aquaculture",
+      terrainNote: "Eastern Ghats & Bay coastal plains",
+    },
+    "Telangana": {
+      lat_min: 16.0, lat_max: 19.5, lon_min: 77.5, lon_max: 81.0,
+      centerLat: 17.9, centerLon: 79.2,
+      basin: "Godavari & Nagarjuna Sagar",
+      cropZone: "Deccan plateau cotton, maize & red gram",
+      terrainNote: "Central Deccan plateau",
+    },
+    "Odisha": {
+      lat_min: 18.0, lat_max: 22.5, lon_min: 81.5, lon_max: 87.5,
+      centerLat: 20.3, centerLon: 85.2,
+      basin: "Mahanadi, Brahmani & Baitarani",
+      cropZone: "Coastal kharif/rabi paddy & delta pulses",
+      terrainNote: "Puri–Ganjam Bay of Bengal littoral",
+    },
+    "West Bengal": {
+      lat_min: 21.5, lat_max: 26.8, lon_min: 86.0, lon_max: 89.8,
+      centerLat: 23.4, centerLon: 87.9,
+      basin: "Hooghly, Damodar & Teesta",
+      cropZone: "Gangetic plains paddy, jute & Sundarbans",
+      terrainNote: "Sundarbans estuary & lower Gangetic plain",
+    },
+  };
+
+  // True Georeferenced India Country Outline Polygon in [lon, lat] degrees (68.1°E–97.4°E, 8.1°N–37.1°N)
+  const INDIA_BORDER_LONLAT = [
+    [68.2, 23.7], [69.0, 22.3], [70.5, 20.9], [72.6, 21.7], [72.8, 19.0],
+    [73.4, 16.0], [74.8, 12.8], [76.2, 9.9],  [77.5, 8.1],  [78.2, 8.8],
+    [79.8, 10.3], [80.3, 13.1], [80.1, 15.8], [82.2, 16.8], [84.9, 19.2],
+    [86.9, 21.5], [88.2, 21.6], [89.0, 22.2], [88.8, 24.4], [88.1, 26.6],
+    [88.2, 27.9], [89.8, 26.8], [91.6, 26.8], [92.1, 27.7], [94.2, 28.4],
+    [96.1, 29.4], [97.4, 28.2], [96.6, 27.1], [95.1, 26.6], [94.6, 25.4],
+    [93.2, 23.1], [92.3, 24.2], [91.5, 23.0], [91.8, 25.1], [89.8, 25.8],
+    [88.1, 26.5], [85.2, 26.8], [81.0, 28.4], [80.2, 29.8], [78.9, 31.4],
+    [78.5, 32.8], [79.5, 34.4], [78.2, 35.8], [76.0, 36.9], [74.2, 36.8],
+    [73.8, 35.2], [74.6, 33.4], [75.2, 32.1], [73.9, 30.2], [71.0, 27.8],
+    [69.5, 26.8], [70.2, 25.4], [68.4, 24.4], [68.2, 23.7],
+  ];
+
+  // Key Internal State BoundaryPolylines in [lon, lat] degrees
+  const INDIA_STATE_LINES_LONLAT = [
+    [[72.8, 20.2], [76.2, 21.2], [80.3, 21.4], [83.8, 21.2], [86.9, 21.5]], // N Maharashtra / Chhattisgarh / Odisha
+    [[73.4, 16.0], [77.4, 16.2], [80.1, 15.8]],                             // Karnataka / Maharashtra / Telangana / AP
+    [[74.8, 12.8], [77.2, 12.6], [80.3, 13.1]],                             // Kerala / Karnataka / Tamil Nadu
+    [[76.2, 9.9],  [77.4, 11.5], [77.2, 12.6]],                             // Kerala / Tamil Nadu Western Ghats
+    [[77.4, 16.2], [78.0, 19.2], [80.3, 21.4]],                             // Telangana / Maharashtra
+    [[78.0, 19.2], [81.2, 18.8], [84.9, 19.2]],                             // Telangana / Odisha / AP
+    [[82.2, 16.8], [81.2, 18.8], [83.8, 21.2], [86.2, 22.6], [88.2, 21.6]], // AP / Odisha / West Bengal
+    [[70.2, 25.4], [75.8, 25.2], [78.4, 26.5], [84.2, 25.6], [88.8, 24.4]], // Rajasthan / MP / UP / Bihar / Bengal
+    [[72.6, 21.7], [74.5, 24.2], [75.8, 25.2], [76.2, 21.2]],               // Gujarat / Rajasthan / MP
+  ];
+
   const prefersReducedMotion = () =>
     window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -31,18 +119,19 @@
       { channel: 5, mode: "rel", val: 0.15 },
     ],
     activeTitle: "Warm Bay (+3K, +15% tcwv)",
-    selectedChannel: 0,
+    selectedChannel: 1,   // Default to Rainfall (matches Stitch Regional Insights default)
+    selectedState: "Karnataka",
     compareMode: "split", // "split" | "swipe" | "delta"
     swipePct: 50,
     renderMode: "2d",     // "2d" | "3d" | "mc"
-    smoothGrid: true,     // true = bilinear smooth, false = exact 32x36 raw cells
+    smoothGrid: true,
     selectedDay: 0,
-    playPos: 0.0,         // continuous float 0..(steps-1) during smooth playback
-    hazardTab: "flood",   // "flood" | "heat" | "agro"
-    primeRollout: null,   // [steps, 6, 32, 36]
-    shockRollout: null,   // [steps, 6, 32, 36]
-    mcSpread: null,       // [steps, 6, 32, 36]
-    mcRainProb: null,     // [steps, 32, 36]
+    playPos: 0.0,
+    hazardTab: "flood",
+    primeRollout: null,
+    shockRollout: null,
+    mcSpread: null,
+    mcRainProb: null,
     nullDiffSigma: null,
     nullVerifiedKey: "",
     reqSeq: 0,
@@ -60,25 +149,30 @@
     wavefrontRafId: null,
     cachedCausality: null,
     presentationMode: false,
+    darkTheme: false,
+    globeRotLon: -78.9,
+    globeRotLat: -20.5,
+    globeZoom: 1.0,
+    globeRafId: null,
+    globeDragging: false,
+    globeDragLast: null,
   };
 
-  // --- Perceptually Uniform Color Scales ---
+  // --- Color Scales (Light & Dark Harmonized Perceptually Uniform Stops) ---
   const SEQ_STOPS = [
-    [16, 25, 53],
-    [29, 78, 137],
-    [24, 143, 167],
-    [61, 220, 151],
-    [181, 228, 140],
-    [255, 176, 32],
-    [255, 92, 112],
+    [29, 78, 216],
+    [6, 182, 212],
+    [16, 185, 129],
+    [245, 158, 11],
+    [239, 68, 68],
   ];
 
   const DIV_STOPS = [
-    [43, 89, 195],
-    [76, 201, 240],
-    [20, 30, 51],
-    [255, 176, 32],
-    [255, 92, 112],
+    [29, 78, 216],
+    [96, 165, 250],
+    [241, 245, 249],
+    [245, 158, 11],
+    [239, 68, 68],
   ];
 
   function sampleStops(stops, norm) {
@@ -95,7 +189,6 @@
     ];
   }
 
-  // --- Helpers & Motion Utilities ---
   function escapeHtml(str) {
     return String(str)
       .replace(/&/g, "&amp;")
@@ -125,7 +218,7 @@
     }
     if (state.kpiRafIds[elId]) cancelAnimationFrame(state.kpiRafIds[elId]);
     const t0 = performance.now();
-    const dur = durationMs || 340;
+    const dur = durationMs || 320;
 
     function tick(now) {
       const p = Math.min(1, (now - t0) / dur);
@@ -219,6 +312,7 @@
     draw2DMap("canvas-prime", oro, null, null, oMin, oMax, false, false);
     draw2DMap("canvas-shock", oro, null, null, oMin, oMax, false, true);
     draw2DMap("canvas-delta", oro, null, null, oMin, oMax, false, true);
+    drawRegionalIndiaCanvas(oro, oMin, oMax);
   }
 
   function getApiUrl() {
@@ -433,9 +527,7 @@
 
       state.cachedCausality = computeCausalityAndWavefront();
       updateTrustAndCausalityPanel(true);
-      updateDisasterImpactAndPolicy();
-      renderMapsOnly();
-      updateHoverInspector();
+      updateAllViews();
     } catch (err) {
       if (reqId === state.reqSeq) {
         showApiError(`Simulation error: ${err.message}`);
@@ -569,6 +661,369 @@
     }
   }
 
+  // --- Coordinate Projection & Georeferenced India Vector Overlay ---
+  function lonLatToCanvasXY(lon, lat, W, H) {
+    const x = ((lon - 65.5) / 35.0) * W;
+    const y = ((37.5 - lat) / 31.0) * H;
+    return [x, y];
+  }
+
+  function drawIndiaVectorBoundaries(ctx, W, H, showStateAbbrev) {
+    ctx.save();
+    // Internal State Boundaries
+    ctx.strokeStyle = state.darkTheme ? "rgba(226, 232, 240, 0.35)" : "rgba(15, 23, 42, 0.28)";
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    for (const poly of INDIA_STATE_LINES_LONLAT) {
+      for (let i = 0; i < poly.length; i++) {
+        const [x, y] = lonLatToCanvasXY(poly[i][0], poly[i][1], W, H);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+
+    // Accurate India Outer Country Boundary
+    ctx.strokeStyle = state.darkTheme ? "rgba(241, 245, 249, 0.92)" : "rgba(16, 27, 56, 0.88)";
+    ctx.lineWidth = 1.9;
+    ctx.beginPath();
+    for (let i = 0; i < INDIA_BORDER_LONLAT.length; i++) {
+      const [x, y] = lonLatToCanvasXY(INDIA_BORDER_LONLAT[i][0], INDIA_BORDER_LONLAT[i][1], W, H);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    if (showStateAbbrev) {
+      ctx.font = "600 9.5px Inter, system-ui, sans-serif";
+      ctx.fillStyle = state.darkTheme ? "rgba(241, 245, 249, 0.85)" : "rgba(16, 27, 56, 0.82)";
+      ctx.textAlign = "center";
+      for (const [sName, info] of Object.entries(INDIA_STATES)) {
+        const [sx, sy] = lonLatToCanvasXY(info.centerLon, info.centerLat, W, H);
+        ctx.fillText(sName, sx, sy - 6);
+      }
+    }
+    ctx.restore();
+  }
+
+  // --- Regional India Map Canvas (Stitch Col 2 Card) ---
+  function drawRegionalIndiaCanvas(field2d, minVal, maxVal) {
+    const canvas = document.getElementById("canvas-india-regional");
+    if (!canvas || !field2d) return;
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width;
+    const H = canvas.height;
+    const invSpan = 1.0 / (maxVal - minVal || 1.0);
+
+    // 1. Ocean background
+    ctx.fillStyle = state.darkTheme ? "#081226" : "#E6F2FF";
+    ctx.fillRect(0, 0, W, H);
+
+    // 2. Subtle Lat/Lon Grid lines
+    ctx.strokeStyle = state.darkTheme ? "rgba(96, 165, 250, 0.12)" : "rgba(0, 88, 191, 0.09)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let lon = 70; lon <= 95; lon += 5) {
+      const [x] = lonLatToCanvasXY(lon, 20, W, H);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
+    }
+    for (let lat = 10; lat <= 35; lat += 5) {
+      const [, y] = lonLatToCanvasXY(80, lat, W, H);
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+    }
+    ctx.stroke();
+
+    // 3. Clip the smooth bilinear climate heatmap inside India's exact geographic polygon + coastal buffer
+    const offscreen = document.createElement("canvas");
+    offscreen.width = W;
+    offscreen.height = H;
+    const octx = offscreen.getContext("2d");
+    const img = octx.createImageData(W, H);
+    const buf = img.data;
+    let p = 0;
+    for (let py = 0; py < H; py++) {
+      const rf = (1.0 - (py + 0.5) / H) * NLAT - 0.5;
+      for (let px = 0; px < W; px++) {
+        const cf = ((px + 0.5) / W) * NLON - 0.5;
+        const val = bilerpGrid(field2d, rf, cf);
+        const norm = (val - minVal) * invSpan;
+        const rgb = sampleStops(SEQ_STOPS, norm);
+        buf[p++] = rgb[0];
+        buf[p++] = rgb[1];
+        buf[p++] = rgb[2];
+        buf[p++] = 228;
+      }
+    }
+    octx.putImageData(img, 0, 0);
+
+    ctx.save();
+    ctx.beginPath();
+    for (let i = 0; i < INDIA_BORDER_LONLAT.length; i++) {
+      const [x, y] = lonLatToCanvasXY(INDIA_BORDER_LONLAT[i][0], INDIA_BORDER_LONLAT[i][1], W, H);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(offscreen, 0, 0);
+    ctx.restore();
+
+    // 4. Draw State Boundaries & Country Border + State Labels
+    drawIndiaVectorBoundaries(ctx, W, H, true);
+
+    // 5. Highlight Selected State Position & Move #map-pin
+    const stInfo = INDIA_STATES[state.selectedState] || INDIA_STATES["Karnataka"];
+    const [pinX, pinY] = lonLatToCanvasXY(stInfo.centerLon, stInfo.centerLat, W, H);
+    const pinEl = document.getElementById("map-pin");
+    if (pinEl) {
+      pinEl.style.left = `${((pinX / W) * 100).toFixed(1)}%`;
+      pinEl.style.top = `${((pinY / H) * 100).toFixed(1)}%`;
+    }
+  }
+
+  // --- Live State-Level Regional Insights Engine (Coupled to POST /simulate) ---
+  function computeStateMetrics(stateName) {
+    const info = INDIA_STATES[stateName];
+    if (!info || !state.primeRollout || !state.shockRollout) return null;
+    const lat = state.data.grid.lat;
+    const lon = state.data.grid.lon;
+    const steps = state.primeRollout.length;
+
+    const cells = [];
+    for (let r = 0; r < NLAT; r++) {
+      for (let c = 0; c < NLON; c++) {
+        if (lat[r] >= info.lat_min && lat[r] <= info.lat_max && lon[c] >= info.lon_min && lon[c] <= info.lon_max) {
+          cells.push([r, c]);
+        }
+      }
+    }
+    if (!cells.length) return null;
+
+    const dailyRainShock = new Array(steps).fill(0);
+    const dailyRainPrime = new Array(steps).fill(0);
+    const dailyTempShockC = new Array(steps).fill(0);
+    const dailyTempPrimeC = new Array(steps).fill(0);
+    let sumWindShockKmh = 0, sumWindPrimeKmh = 0;
+    let sumMoistShock = 0, sumMoistPrime = 0;
+    let peakRainDayIdx = 0;
+
+    for (let k = 0; k < steps; k++) {
+      let rS = 0, rP = 0, tS = 0, tP = 0, wS = 0, wP = 0, mS = 0, mP = 0;
+      for (const [r, c] of cells) {
+        rS += state.shockRollout[k][1][r][c];
+        rP += state.primeRollout[k][1][r][c];
+        tS += state.shockRollout[k][0][r][c] - 273.15;
+        tP += state.primeRollout[k][0][r][c] - 273.15;
+        wS += Math.hypot(state.shockRollout[k][2][r][c], state.shockRollout[k][3][r][c]) * 3.6;
+        wP += Math.hypot(state.primeRollout[k][2][r][c], state.primeRollout[k][3][r][c]) * 3.6;
+        mS += state.shockRollout[k][5][r][c];
+        mP += state.primeRollout[k][5][r][c];
+      }
+      const n = cells.length;
+      dailyRainShock[k] = rS / n;
+      dailyRainPrime[k] = rP / n;
+      dailyTempShockC[k] = tS / n;
+      dailyTempPrimeC[k] = tP / n;
+      if (dailyRainShock[k] > dailyRainShock[peakRainDayIdx]) peakRainDayIdx = k;
+      sumWindShockKmh += wS / n;
+      sumWindPrimeKmh += wP / n;
+      sumMoistShock += mS / n;
+      sumMoistPrime += mP / n;
+    }
+
+    const totalRainShock = dailyRainShock.reduce((a, b) => a + b, 0);
+    const totalRainPrime = dailyRainPrime.reduce((a, b) => a + b, 0);
+    const rainDeltaMm = totalRainShock - totalRainPrime;
+    const rainPctDelta = totalRainPrime > 0.5
+      ? ((totalRainShock - totalRainPrime) / totalRainPrime) * 100.0
+      : rainDeltaMm * 10.0;
+
+    const avgTempShock = dailyTempShockC.reduce((a, b) => a + b, 0) / steps;
+    const avgTempPrime = dailyTempPrimeC.reduce((a, b) => a + b, 0) / steps;
+    const tempDeltaC = avgTempShock - avgTempPrime;
+
+    const avgWindShock = sumWindShockKmh / steps;
+    const avgWindPrime = sumWindPrimeKmh / steps;
+    const windPctDelta = avgWindPrime > 0.2
+      ? ((avgWindShock - avgWindPrime) / avgWindPrime) * 100.0
+      : 0.0;
+
+    const avgMoistShock = sumMoistShock / steps;
+    const avgMoistPrime = sumMoistPrime / steps;
+    const moistPctDelta = avgMoistPrime > 0.2
+      ? ((avgMoistShock - avgMoistPrime) / avgMoistPrime) * 100.0
+      : 0.0;
+
+    const maxDailyRain = Math.max(...dailyRainShock);
+    const riskLevel =
+      maxDailyRain >= 12.0 || Math.abs(rainPctDelta) >= 15.0 || avgTempShock >= 36.5
+        ? "High"
+        : (maxDailyRain >= 5.0 || Math.abs(rainPctDelta) >= 5.0 ? "Moderate" : "Low");
+
+    return {
+      stateName,
+      info,
+      steps,
+      dailyRainShock,
+      dailyTempShockC,
+      totalRainShock,
+      rainDeltaMm,
+      rainPctDelta,
+      avgTempShock,
+      tempDeltaC,
+      avgWindShock,
+      windPctDelta,
+      avgMoistShock,
+      moistPctDelta,
+      peakRainDayIdx,
+      maxDailyRain,
+      riskLevel,
+    };
+  }
+
+  function updateRegionalInsightsLive() {
+    if (!state.primeRollout || !state.shockRollout) return;
+
+    const allStateMetrics = Object.keys(INDIA_STATES)
+      .map(computeStateMetrics)
+      .filter(Boolean);
+    const cur = computeStateMetrics(state.selectedState) || allStateMetrics[0];
+    if (!cur) return;
+
+    const winLabel =
+      state.windowKey === "cyclone_oct" ? "Bay Cyclone Surge (Mid-Oct)" :
+      state.windowKey === "heatwave_may" ? "Pre-Monsoon Heatwave (Mid-May)" :
+      "Monsoon Onset (Mid-June)";
+
+    // 1. Update Callout & Forecast Header
+    document.getElementById("callout-state").textContent = cur.stateName;
+    document.getElementById("callout-rain").textContent = `${cur.totalRainShock.toFixed(1)} mm (${cur.steps}d)`;
+    document.getElementById("callout-sub").textContent =
+      `${cur.rainPctDelta >= 0 ? "+" : ""}${cur.rainPctDelta.toFixed(1)}% vs Baseline`;
+    document.getElementById("state-forecast-title").textContent =
+      `${cur.stateName} – ${cur.steps}-Day Forecast`;
+    document.getElementById("state-window-badge").textContent =
+      `${winLabel} · D+1 to D+${cur.steps}`;
+    document.getElementById("insights-title").textContent =
+      `Key Insights – ${cur.stateName}`;
+
+    // 2. Update 4 State KPI Tiles
+    document.getElementById("kpi-rain").textContent = `${cur.totalRainShock.toFixed(1)} mm`;
+    document.getElementById("kpi-rain-delta").textContent =
+      `${cur.rainPctDelta >= 0 ? "+" : ""}${cur.rainPctDelta.toFixed(1)}% vs Prime`;
+    document.getElementById("kpi-temp").textContent = `${cur.avgTempShock.toFixed(1)} °C`;
+    document.getElementById("kpi-temp-delta").textContent =
+      `${cur.tempDeltaC >= 0 ? "+" : ""}${cur.tempDeltaC.toFixed(2)} °C`;
+    document.getElementById("kpi-wind").textContent = `${cur.avgWindShock.toFixed(1)} km/h`;
+    document.getElementById("kpi-wind-delta").textContent =
+      `${cur.windPctDelta >= 0 ? "+" : ""}${cur.windPctDelta.toFixed(1)}%`;
+    document.getElementById("kpi-moist").textContent = `${cur.avgMoistShock.toFixed(1)} kg/m²`;
+    document.getElementById("kpi-moist-delta").textContent =
+      `${cur.moistPctDelta >= 0 ? "+" : ""}${cur.moistPctDelta.toFixed(1)}%`;
+
+    // 3. Render 10-Day Rainfall (Bars) & Temperature (Line) Trend SVG Chart
+    const barsGroup = document.getElementById("trend-bars-group");
+    const tempLine = document.getElementById("trend-temp-line");
+    const dotsGroup = document.getElementById("trend-dots-group");
+    const xLabelsGroup = document.getElementById("trend-xlabels-group");
+    if (barsGroup && tempLine && dotsGroup && xLabelsGroup) {
+      const n = cur.steps;
+      const maxR = Math.max(10.0, ...cur.dailyRainShock);
+      const minT = Math.min(...cur.dailyTempShockC) - 1.0;
+      const maxT = Math.max(minT + 2.0, ...cur.dailyTempShockC) + 1.0;
+      const plotL = 36, plotR = 334, baseY = 114, maxBarH = 64;
+      const stepW = (plotR - plotL) / Math.max(1, n - 1);
+
+      let barsHtml = "";
+      let dotsHtml = "";
+      let lblsHtml = "";
+      const pts = [];
+
+      for (let k = 0; k < n; k++) {
+        const cx = plotL + k * stepW;
+        const barH = Math.max(4, Math.min(maxBarH, (cur.dailyRainShock[k] / maxR) * maxBarH));
+        const barY = baseY - barH;
+        const isActiveDay = k === state.selectedDay;
+        const barFill = isActiveDay ? "#0058BF" : "#60A5FA";
+        barsHtml += `<rect x="${(cx - 7).toFixed(1)}" y="${barY.toFixed(1)}" width="14" height="${barH.toFixed(1)}" rx="2.5" fill="${barFill}"><title>Day +${k + 1}: ${cur.dailyRainShock[k].toFixed(1)} mm/d, ${cur.dailyTempShockC[k].toFixed(1)} °C</title></rect>`;
+
+        const tNorm = (cur.dailyTempShockC[k] - minT) / (maxT - minT || 1);
+        const ty = 46 - tNorm * 26;
+        pts.push(`${cx.toFixed(1)},${ty.toFixed(1)}`);
+        dotsHtml += `<circle cx="${cx.toFixed(1)}" cy="${ty.toFixed(1)}" r="${isActiveDay ? 3.5 : 2.2}"></circle>`;
+        lblsHtml += `<text x="${cx.toFixed(1)}" y="130" font-weight="${isActiveDay ? "700" : "500"}">D${k + 1}</text>`;
+      }
+      barsGroup.innerHTML = barsHtml;
+      tempLine.setAttribute("points", pts.join(" "));
+      dotsGroup.innerHTML = dotsHtml;
+      xLabelsGroup.innerHTML = lblsHtml;
+    }
+
+    // 4. Populate State-wise Impact Summary Table (All 8 States Live)
+    const tbody = document.getElementById("state-summary-tbody");
+    if (tbody) {
+      tbody.innerHTML = allStateMetrics
+        .map((m) => {
+          const pillCls =
+            m.riskLevel === "High" ? "risk-high" :
+            m.riskLevel === "Moderate" ? "risk-mod" : "risk-low";
+          const isSel = m.stateName === cur.stateName;
+          return (
+            `<tr data-state="${escapeHtml(m.stateName)}" style="${isSel ? "background-color: var(--primary-container);" : ""}">` +
+            `<td class="font-semibold">${escapeHtml(m.stateName)}</td>` +
+            `<td class="tabular">${m.totalRainShock.toFixed(1)} mm</td>` +
+            `<td class="tabular text-success">${m.rainPctDelta >= 0 ? "+" : ""}${m.rainPctDelta.toFixed(1)}%</td>` +
+            `<td><span class="risk-pill ${pillCls}">${m.riskLevel}</span></td>` +
+            `</tr>`
+          );
+        })
+        .join("");
+
+      tbody.querySelectorAll("tr[data-state]").forEach((row) => {
+        row.addEventListener("click", () => selectIndianState(row.dataset.state));
+      });
+    }
+
+    // 5. Populate Key Insights & Sector Impacts
+    const peakD = cur.peakRainDayIdx + 1;
+    document.getElementById("insight-1").textContent =
+      `Cumulative ${cur.steps}-day rainfall is projected at ${cur.totalRainShock.toFixed(1)} mm (${cur.rainPctDelta >= 0 ? "+" : ""}${cur.rainPctDelta.toFixed(1)}% vs unperturbed baseline).`;
+    document.getElementById("insight-2").textContent =
+      `Average 2m temperature sits at ${cur.avgTempShock.toFixed(1)} °C (${cur.tempDeltaC >= 0 ? "+" : ""}${cur.tempDeltaC.toFixed(2)} °C counterfactual shift across ${cur.stateName}).`;
+    document.getElementById("insight-3").textContent =
+      `10m wind averages ${cur.avgWindShock.toFixed(1)} km/h with column water vapour at ${cur.avgMoistShock.toFixed(1)} kg/m² (${cur.moistPctDelta >= 0 ? "+" : ""}${cur.moistPctDelta.toFixed(1)}%).`;
+    document.getElementById("insight-4").textContent =
+      `Peak precipitation occurs around Day +${peakD} (${cur.maxDailyRain.toFixed(1)} mm/day) across ${cur.info.terrainNote}.`;
+
+    document.getElementById("sector-agri").textContent =
+      cur.rainPctDelta > 8.0
+        ? `Ensure field drainage for ${cur.info.cropZone}; +${cur.rainPctDelta.toFixed(1)}% moisture surge.`
+        : cur.rainPctDelta < -5.0
+        ? `Schedule supplemental irrigation for ${cur.info.cropZone} (${cur.rainPctDelta.toFixed(1)}% deficit).`
+        : `Favourable moisture balance for ${cur.info.cropZone}.`;
+
+    document.getElementById("sector-water").textContent =
+      `${cur.info.basin} basin inflow projected at ${cur.rainPctDelta >= 0 ? "+" : ""}${cur.rainPctDelta.toFixed(1)}% vs baseline.`;
+
+    document.getElementById("sector-risk").textContent =
+      `${cur.riskLevel} monsoon watch near Day +${peakD} (${cur.maxDailyRain.toFixed(1)} mm/d peak) over ${cur.info.terrainNote}.`;
+  }
+
+  function selectIndianState(stateName) {
+    if (!INDIA_STATES[stateName]) return;
+    state.selectedState = stateName;
+    document.querySelectorAll(".state-btn").forEach((b) => {
+      const act = b.dataset.state === stateName;
+      b.classList.toggle("active", act);
+      b.setAttribute("aria-selected", String(act));
+    });
+    updateRegionalInsightsLive();
+    renderMapsOnly();
+  }
+
   // --- Smooth Bilinear & Raw Grid Map Rendering ---
   function bilerpGrid(grid2d, rf, cf) {
     const r0 = Math.max(0, Math.min(NLAT - 1, Math.floor(rf)));
@@ -632,13 +1087,11 @@
     const H = canvas.height;
     const cellW = W / NLON;
     const cellH = H / NLAT;
-    const lsm = state.data.grid.land_sea_mask;
     const oro = state.data.grid.orography_m;
     const stops = isDiverging ? DIV_STOPS : SEQ_STOPS;
     const invSpan = 1.0 / (maxVal - minVal || 1.0);
 
     if (state.smoothGrid) {
-      // Bilinearly interpolated ImageData across W x H pixels
       const img = ctx.createImageData(W, H);
       const buf = img.data;
       let p = 0;
@@ -650,7 +1103,7 @@
           const elev = bilerpGrid(oro, rf, cf);
           const norm = (val - minVal) * invSpan;
           const rgb = sampleStops(stops, norm);
-          const shade = 1.0 + Math.min(0.14, (elev / 4800.0) * 0.14);
+          const shade = 1.0 + Math.min(0.12, (elev / 4800.0) * 0.12);
           buf[p++] = Math.min(255, (rgb[0] * shade) | 0);
           buf[p++] = Math.min(255, (rgb[1] * shade) | 0);
           buf[p++] = Math.min(255, (rgb[2] * shade) | 0);
@@ -659,7 +1112,6 @@
       }
       ctx.putImageData(img, 0, 0);
     } else {
-      // Exact 32x36 raw grid cells for discrete verification
       ctx.clearRect(0, 0, W, H);
       for (let r = 0; r < NLAT; r++) {
         const y = (NLAT - 1 - r) * cellH;
@@ -671,7 +1123,7 @@
           ctx.fillRect(x, y, Math.ceil(cellW), Math.ceil(cellH));
         }
       }
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
       ctx.lineWidth = 0.6;
       ctx.beginPath();
       for (let r = 1; r < NLAT; r++) {
@@ -685,50 +1137,13 @@
       ctx.stroke();
     }
 
-    // Smooth Marching-Squares Land-Sea Coastline Contour (lsm = 0.5)
-    ctx.strokeStyle = "rgba(230, 237, 247, 0.72)";
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    for (let r = 0; r < NLAT - 1; r++) {
-      const yTop = (NLAT - 1 - (r + 1) + 0.5) * cellH;
-      const yBot = (NLAT - 1 - r + 0.5) * cellH;
-      for (let c = 0; c < NLON - 1; c++) {
-        const xLeft = (c + 0.5) * cellW;
-        const xRight = (c + 1.5) * cellW;
-        const b0 = lsm[r][c] >= 0.5 ? 1 : 0;
-        const b1 = lsm[r][c + 1] >= 0.5 ? 1 : 0;
-        const b2 = lsm[r + 1][c + 1] >= 0.5 ? 1 : 0;
-        const b3 = lsm[r + 1][c] >= 0.5 ? 1 : 0;
-        const code = b0 | (b1 << 1) | (b2 << 2) | (b3 << 3);
-        if (code === 0 || code === 15) continue;
+    // Accurate Georeferenced India Country & State Boundaries Overlay
+    drawIndiaVectorBoundaries(ctx, W, H, false);
 
-        const topPt = [(xLeft + xRight) * 0.5, yTop];
-        const rightPt = [xRight, (yTop + yBot) * 0.5];
-        const botPt = [(xLeft + xRight) * 0.5, yBot];
-        const leftPt = [xLeft, (yTop + yBot) * 0.5];
-
-        const segs = [];
-        if (code === 1 || code === 14) segs.push([leftPt, botPt]);
-        else if (code === 2 || code === 13) segs.push([botPt, rightPt]);
-        else if (code === 3 || code === 12) segs.push([leftPt, rightPt]);
-        else if (code === 4 || code === 11) segs.push([topPt, rightPt]);
-        else if (code === 6 || code === 9) segs.push([topPt, botPt]);
-        else if (code === 7 || code === 8) segs.push([leftPt, topPt]);
-        else if (code === 5) { segs.push([leftPt, topPt], [botPt, rightPt]); }
-        else if (code === 10) { segs.push([topPt, rightPt], [leftPt, botPt]); }
-
-        for (const [pA, pB] of segs) {
-          ctx.moveTo(pA[0], pA[1]);
-          ctx.lineTo(pB[0], pB[1]);
-        }
-      }
-    }
-    ctx.stroke();
-
-    // Wind Vectors (clean arrows with arrowheads every 2nd cell)
+    // Wind Vectors
     if (uWind2d && vWind2d) {
-      ctx.strokeStyle = "rgba(230, 237, 247, 0.52)";
-      ctx.lineWidth = 1.1;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.72)";
+      ctx.lineWidth = 1.15;
       ctx.beginPath();
       for (let r = 1; r < NLAT; r += 2) {
         const cy = (NLAT - 1 - r + 0.5) * cellH;
@@ -747,7 +1162,6 @@
           const y2 = cy + uy * len * 0.55;
           ctx.moveTo(x1, y1);
           ctx.lineTo(x2, y2);
-          // Small arrowhead
           ctx.moveTo(x2, y2);
           ctx.lineTo(x2 - ux * 3.2 - uy * 2.0, y2 - uy * 3.2 + ux * 2.0);
           ctx.moveTo(x2, y2);
@@ -757,7 +1171,7 @@
       ctx.stroke();
     }
 
-    // Shock Box & 3-Cell Locality Zone Overlay (committed activeBox + optional draftBox preview)
+    // Shock Box & 3-Cell Locality Zone Overlay
     const displayBox = state.draftBox || state.activeBox;
     if (drawBoxOverlay && displayBox) {
       const lat = state.data.grid.lat;
@@ -781,8 +1195,8 @@
       const ncMax = Math.min(NLON - 1, cMax + 3);
 
       ctx.save();
-      ctx.strokeStyle = "rgba(76, 201, 240, 0.75)";
-      ctx.lineWidth = 1.3;
+      ctx.strokeStyle = "#FFFFFF";
+      ctx.lineWidth = 1.4;
       ctx.setLineDash([4, 4]);
       ctx.strokeRect(
         ncMin * cellW,
@@ -791,8 +1205,8 @@
         (nrMax - nrMin + 1) * cellH
       );
 
-      ctx.strokeStyle = "#FFB020";
-      ctx.lineWidth = 2.0;
+      ctx.strokeStyle = "#F59E0B";
+      ctx.lineWidth = 2.2;
       ctx.setLineDash([]);
       ctx.strokeRect(
         cMin * cellW,
@@ -803,11 +1217,10 @@
       ctx.restore();
     }
 
-    // Hovered Cell Reticle
     if (state.hoverCell) {
       const { r, c } = state.hoverCell;
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "#FFFFFF";
+      ctx.lineWidth = 1.6;
       ctx.strokeRect(c * cellW, (NLAT - 1 - r) * cellH, cellW, cellH);
     }
   }
@@ -841,7 +1254,7 @@
         const plumeZ = isDiverging ? Math.abs(norm - 0.5) * 34.0 : norm * 22.0;
         const totalZ = terrainZ + plumeZ;
 
-        ctx.fillStyle = `rgba(${(rgb[0] * 0.62) | 0}, ${(rgb[1] * 0.62) | 0}, ${(rgb[2] * 0.62) | 0}, 0.94)`;
+        ctx.fillStyle = `rgba(${(rgb[0] * 0.68) | 0}, ${(rgb[1] * 0.68) | 0}, ${(rgb[2] * 0.68) | 0}, 0.94)`;
         ctx.fillRect(isoX - tileW * 0.46, isoY - totalZ, tileW * 0.92, totalZ + 2);
 
         ctx.fillStyle = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
@@ -854,12 +1267,177 @@
         ctx.fill();
 
         if (lsm[r][c] >= 0.5) {
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.20)";
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
           ctx.lineWidth = 0.5;
           ctx.stroke();
         }
       }
     }
+  }
+
+  // --- Interactive 3D Rotating Earth-to-India Globe ---
+  function renderEarthGlobe() {
+    const canvas = document.getElementById("canvas-earth-globe");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const cx = W * 0.5;
+    const cy = H * 0.5;
+    const R = Math.min(W, H) * 0.38 * state.globeZoom;
+    const deg2rad = Math.PI / 180;
+    const lon0 = -state.globeRotLon * deg2rad;
+    const lat0 = -state.globeRotLat * deg2rad;
+
+    function project3D(lonDeg, latDeg) {
+      const lam = lonDeg * deg2rad;
+      const phi = latDeg * deg2rad;
+      const dLam = lam - lon0;
+      const cosC = Math.sin(lat0) * Math.sin(phi) + Math.cos(lat0) * Math.cos(phi) * Math.cos(dLam);
+      if (cosC < 0) return null; // Back of globe
+      const x = cx + R * Math.cos(phi) * Math.sin(dLam);
+      const y = cy - R * (Math.cos(lat0) * Math.sin(phi) - Math.sin(lat0) * Math.cos(phi) * Math.cos(dLam));
+      return [x, y];
+    }
+
+    // Atmospheric Outer Halo
+    const halo = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.24);
+    halo.addColorStop(0, "rgba(22, 119, 249, 0.26)");
+    halo.addColorStop(1, "rgba(22, 119, 249, 0)");
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 1.24, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3D Ocean Sphere
+    const oceanGrad = ctx.createRadialGradient(cx - R * 0.28, cy - R * 0.28, R * 0.1, cx, cy, R);
+    oceanGrad.addColorStop(0, state.darkTheme ? "#1E4E8C" : "#3B82F6");
+    oceanGrad.addColorStop(0.65, state.darkTheme ? "#0F2952" : "#1D4ED8");
+    oceanGrad.addColorStop(1, state.darkTheme ? "#061126" : "#1E3A8A");
+    ctx.fillStyle = oceanGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Graticule Latitude / Longitude Lines
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.16)";
+    ctx.lineWidth = 1;
+    for (let lon = -180; lon < 180; lon += 20) {
+      ctx.beginPath();
+      let started = false;
+      for (let lat = -80; lat <= 80; lat += 5) {
+        const pt = project3D(lon, lat);
+        if (!pt) { started = false; continue; }
+        if (!started) { ctx.moveTo(pt[0], pt[1]); started = true; }
+        else ctx.lineTo(pt[0], pt[1]);
+      }
+      ctx.stroke();
+    }
+    for (let lat = -60; lat <= 60; lat += 20) {
+      ctx.beginPath();
+      let started = false;
+      for (let lon = -180; lon <= 180; lon += 5) {
+        const pt = project3D(lon, lat);
+        if (!pt) { started = false; continue; }
+        if (!started) { ctx.moveTo(pt[0], pt[1]); started = true; }
+        else ctx.lineTo(pt[0], pt[1]);
+      }
+      ctx.stroke();
+    }
+
+    // Highlighted Georeferenced India Polygon on the 3D Globe
+    ctx.fillStyle = "rgba(16, 185, 129, 0.72)";
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    let started = false;
+    for (const [lon, lat] of INDIA_BORDER_LONLAT) {
+      const pt = project3D(lon, lat);
+      if (!pt) continue;
+      if (!started) { ctx.moveTo(pt[0], pt[1]); started = true; }
+      else ctx.lineTo(pt[0], pt[1]);
+    }
+    if (started) {
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // Target Reticle on India (20.5°N, 78.9°E)
+    const indCenter = project3D(78.9, 20.5);
+    if (indCenter) {
+      ctx.strokeStyle = "#FEF08A";
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(indCenter[0], indCenter[1], 32 * Math.sqrt(state.globeZoom), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  function openGlobeOverlay() {
+    const overlay = document.getElementById("globe-intro-overlay");
+    if (!overlay) return;
+    overlay.classList.remove("hidden");
+    state.globeZoom = 1.0;
+    if (state.globeRafId) cancelAnimationFrame(state.globeRafId);
+
+    function spinTick() {
+      if (overlay.classList.contains("hidden")) return;
+      if (!state.globeDragging) {
+        state.globeRotLon -= 0.12;
+      }
+      renderEarthGlobe();
+      state.globeRafId = requestAnimationFrame(spinTick);
+    }
+    state.globeRafId = requestAnimationFrame(spinTick);
+  }
+
+  function restoreRegionalNavActive() {
+    document.querySelectorAll("#primary-nav-tabs .nav-pill").forEach((p) =>
+      p.classList.toggle("active", p.dataset.nav === "regional")
+    );
+  }
+
+  function animateZoomIntoIndiaAndClose() {
+    const overlay = document.getElementById("globe-intro-overlay");
+    const statusEl = document.getElementById("globe-zoom-status");
+    if (!overlay) return;
+    if (prefersReducedMotion()) {
+      overlay.classList.add("hidden");
+      restoreRegionalNavActive();
+      return;
+    }
+    if (state.globeRafId) cancelAnimationFrame(state.globeRafId);
+    const startLon = state.globeRotLon;
+    const startLat = state.globeRotLat;
+    const targetLon = -78.9;
+    const targetLat = -20.5;
+    const t0 = performance.now();
+    const dur = 950;
+
+    function zoomStep(now) {
+      const p = Math.min(1, (now - t0) / dur);
+      const e = easeOutCubic(p);
+      state.globeRotLon = startLon + (targetLon - startLon) * e;
+      state.globeRotLat = startLat + (targetLat - startLat) * e;
+      state.globeZoom = 1.0 + 1.35 * e;
+      if (statusEl) {
+        statusEl.textContent = `Zooming into Indian Subcontinent (20.5°N, 78.9°E) · Locking 32×36 ERA5 Grid (${Math.round(p * 100)}%)`;
+      }
+      renderEarthGlobe();
+      if (p < 1) {
+        state.globeRafId = requestAnimationFrame(zoomStep);
+      } else {
+        overlay.classList.add("hidden");
+        state.globeZoom = 1.0;
+        restoreRegionalNavActive();
+      }
+    }
+    state.globeRafId = requestAnimationFrame(zoomStep);
   }
 
   // --- Wavefront Chart & Causality Engine ---
@@ -1005,10 +1583,10 @@
     const plotW = W - padL - padR;
     const plotH = H - padT - padB;
 
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.07)";
+    ctx.strokeStyle = state.darkTheme ? "rgba(255, 255, 255, 0.08)" : "rgba(15, 23, 42, 0.08)";
     ctx.lineWidth = 1;
-    ctx.font = "11px system-ui, -apple-system, Segoe UI, sans-serif";
-    ctx.fillStyle = "#8FA0B8";
+    ctx.font = "11px Inter, system-ui, sans-serif";
+    ctx.fillStyle = state.darkTheme ? "#94A3B8" : "#64748B";
     for (let g = 0; g <= 2; g++) {
       const y = padT + (plotH * g) / 2;
       ctx.beginPath();
@@ -1043,29 +1621,28 @@
       ctx.stroke();
     }
 
-    plotCurve(nearShare, "#FFB020");
-    plotCurve(outShare, "#4CC9F0");
+    plotCurve(nearShare, "#F59E0B");
+    plotCurve(outShare, "#0058BF");
     ctx.restore();
 
-    // Current Day Vertical Indicator (moves smoothly with playPos)
     const dayPos = state.playing ? state.playPos : state.selectedDay;
     const curX = padL + (plotW * dayPos) / Math.max(1, steps - 1);
-    ctx.strokeStyle = "#3DDC97";
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "#16A34A";
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.moveTo(curX, padT);
     ctx.lineTo(curX, padT + plotH);
     ctx.stroke();
 
-    ctx.fillStyle = "#8FA0B8";
+    ctx.fillStyle = state.darkTheme ? "#94A3B8" : "#64748B";
     for (let k = 0; k < steps; k++) {
       const x = padL + (plotW * k) / Math.max(1, steps - 1);
       ctx.fillText(`D+${k + 1}`, x - 11, H - 5);
     }
 
-    ctx.fillStyle = "#FFB020";
+    ctx.fillStyle = "#D97706";
     ctx.fillText("● Near Shock (≤3 cells)", padL + 6, 14);
-    ctx.fillStyle = "#4CC9F0";
+    ctx.fillStyle = "#0058BF";
     ctx.fillText("● Outward Ripple (>3 cells)", padL + 175, 14);
 
     document.getElementById("wavefront-summary").textContent =
@@ -1136,7 +1713,7 @@
     else drawWavefrontChart(m, 1.0);
   }
 
-  // --- Impact KPIs (Count-Up Easing) & Co-pilot ---
+  // --- Impact KPIs & Co-pilot ---
   function updateDisasterImpactAndPolicy() {
     if (!state.primeRollout || !state.shockRollout) return;
     const steps = state.primeRollout.length;
@@ -1211,15 +1788,15 @@
       const dPeak = shockMax10dRain - primeMax10dRain;
       const dMsl = shockMinMsl - primeMinMsl;
       l1.textContent = "Heavy-Rain Footprint (>10 mm/d)";
-      animateNumber("hkpi-1-val", shockHeavyRainCells, (v) => `${Math.round(v)} cell-days`, 340);
+      animateNumber("hkpi-1-val", shockHeavyRainCells, (v) => `${Math.round(v)} cell-days`, 320);
       d1.textContent = `${dHeavy >= 0 ? "+" : ""}${dHeavy} vs Prime (${primeHeavyRainCells})`;
 
       l2.textContent = `Peak ${steps}-Day Accumulation`;
-      animateNumber("hkpi-2-val", shockMax10dRain, (v) => `${v.toFixed(1)} mm`, 340);
+      animateNumber("hkpi-2-val", shockMax10dRain, (v) => `${v.toFixed(1)} mm`, 320);
       d2.textContent = `${dPeak >= 0 ? "+" : ""}${dPeak.toFixed(1)} mm vs Prime`;
 
       l3.textContent = "Core Sea-Level Pressure";
-      animateNumber("hkpi-3-val", shockMinMsl, (v) => `${v.toFixed(1)} hPa`, 340);
+      animateNumber("hkpi-3-val", shockMinMsl, (v) => `${v.toFixed(1)} hPa`, 320);
       d3.textContent = `${dMsl >= 0 ? "+" : ""}${dMsl.toFixed(1)} hPa vs Prime`;
 
       l4.textContent = "Flood & Surge Risk";
@@ -1230,15 +1807,15 @@
       const dCells = shockHeatStressCells - primeHeatStressCells;
       const mwSurge = Math.round(dT * 1450 + dCells * 6.5);
       l1.textContent = "Peak Land Temperature";
-      animateNumber("hkpi-1-val", shockMaxTempC, (v) => `${v.toFixed(1)} °C`, 340);
+      animateNumber("hkpi-1-val", shockMaxTempC, (v) => `${v.toFixed(1)} °C`, 320);
       d1.textContent = `${dT >= 0 ? "+" : ""}${dT.toFixed(2)} °C vs Prime`;
 
       l2.textContent = "Humid Heat-Stress Footprint";
-      animateNumber("hkpi-2-val", shockHeatStressCells, (v) => `${Math.round(v)} cell-days`, 340);
+      animateNumber("hkpi-2-val", shockHeatStressCells, (v) => `${Math.round(v)} cell-days`, 320);
       d2.textContent = `${dCells >= 0 ? "+" : ""}${dCells} vs Prime (${primeHeatStressCells})`;
 
       l3.textContent = "Cooling Load Surge";
-      animateNumber("hkpi-3-val", mwSurge, (v) => `${v >= 0 ? "+" : ""}${Math.round(v)} MW`, 340);
+      animateNumber("hkpi-3-val", mwSurge, (v) => `${v >= 0 ? "+" : ""}${Math.round(v)} MW`, 320);
       d3.textContent = "Projected regional grid demand";
 
       l4.textContent = "Thermal Stress Level";
@@ -1248,15 +1825,15 @@
       const dRainMm = shockMeanLandRain - primeMeanLandRain;
       const dHeavy = shockHeavyRainCells - primeHeavyRainCells;
       l1.textContent = `${steps}-Day Mean Land Rainfall`;
-      animateNumber("hkpi-1-val", shockMeanLandRain, (v) => `${v.toFixed(1)} mm`, 340);
+      animateNumber("hkpi-1-val", shockMeanLandRain, (v) => `${v.toFixed(1)} mm`, 320);
       d1.textContent = `${dRainMm >= 0 ? "+" : ""}${dRainMm.toFixed(1)} mm (${rainPctDelta >= 0 ? "+" : ""}${rainPctDelta.toFixed(1)}%)`;
 
       l2.textContent = "Downpour Lodging Exposure";
-      animateNumber("hkpi-2-val", shockHeavyRainCells, (v) => `${Math.round(v)} cell-days`, 340);
+      animateNumber("hkpi-2-val", shockHeavyRainCells, (v) => `${Math.round(v)} cell-days`, 320);
       d2.textContent = `${dHeavy >= 0 ? "+" : ""}${dHeavy} extreme wet cells`;
 
       l3.textContent = "Rainfall Shift Ratio";
-      animateNumber("hkpi-3-val", rainPctDelta, (v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`, 340);
+      animateNumber("hkpi-3-val", rainPctDelta, (v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`, 320);
       d3.textContent = "All-India agricultural land mean";
 
       l4.textContent = "Crop Moisture Status";
@@ -1264,7 +1841,6 @@
       d4.textContent = "Kharif soil water balance";
     }
 
-    // Co-pilot Headline + Short Summary + Expandable Directives
     const k = Math.max(0, Math.min(state.selectedDay, steps - 1));
     const dTempMean = meanDeltaAtDay(k, 0);
     const dMoistMean = meanDeltaAtDay(k, 5);
@@ -1355,7 +1931,7 @@
     document.getElementById("mc-wet-cells").textContent = `${wetCells50} cells`;
   }
 
-  // --- Fast Map Frame Renderer (60fps during smooth timeline playback) ---
+  // --- Fast Map Frame Renderer ---
   function renderMapsOnly() {
     if (!state.primeRollout || !state.shockRollout) return;
     const pos = state.playing ? state.playPos : state.selectedDay;
@@ -1395,6 +1971,15 @@
     const rightMin = isMC ? dMin : cMin;
     const rightMax = isMC ? dMax : cMax;
     const rightMid = 0.5 * (rightMin + rightMax);
+
+    // Update Stitch Regional India Map Canvas & Vertical Legend
+    drawRegionalIndiaCanvas(rightMapGrid, rightMin, rightMax);
+    const legNames = ["Temp", "Rain", "E-Wind", "N-Wind", "Press", "Moist"];
+    const regLegTitle = document.getElementById("regional-legend-label");
+    if (regLegTitle) regLegTitle.textContent = legNames[ch] || "Rain";
+    document.getElementById("reg-leg-max").textContent = formatCompactVal(ch, rightMax, isMC).replace(/\s+.*$/, "");
+    document.getElementById("reg-leg-mid").textContent = formatCompactVal(ch, rightMid, isMC).replace(/\s+.*$/, "");
+    document.getElementById("reg-leg-min").textContent = formatCompactVal(ch, rightMin, isMC).replace(/\s+.*$/, "");
 
     document.getElementById("shock-panel-title").textContent =
       state.compareMode === "swipe"
@@ -1456,6 +2041,7 @@
     updateHoverInspector();
     updateDisasterImpactAndPolicy();
     updateUncertaintyKPIs();
+    updateRegionalInsightsLive();
   }
 
   function updateHoverInspector(clientX, clientY) {
@@ -1570,6 +2156,31 @@
     });
   }
 
+  function initRegionalMapClick() {
+    const regCanvas = document.getElementById("canvas-india-regional");
+    if (!regCanvas) return;
+    regCanvas.addEventListener("click", (ev) => {
+      const rect = regCanvas.getBoundingClientRect();
+      const xFrac = (ev.clientX - rect.left) / Math.max(1, rect.width);
+      const yFrac = (ev.clientY - rect.top) / Math.max(1, rect.height);
+      const clickLon = 65.5 + xFrac * 35.0;
+      const clickLat = 37.5 - yFrac * 31.0;
+
+      let bestState = null;
+      let bestDist = Infinity;
+      for (const [sName, info] of Object.entries(INDIA_STATES)) {
+        const d = Math.hypot(clickLon - info.centerLon, clickLat - info.centerLat);
+        if (d < bestDist) {
+          bestDist = d;
+          bestState = sName;
+        }
+      }
+      if (bestState && bestDist <= 8.5) {
+        selectIndianState(bestState);
+      }
+    });
+  }
+
   function initSwipeSlider() {
     const handle = document.getElementById("swipe-handle");
     const wrap = document.getElementById("swipe-wrap");
@@ -1617,6 +2228,7 @@
     const clearPointers = () => {
       state.swiping = false;
       state.dragStart = null;
+      state.globeDragging = false;
     };
     window.addEventListener("pointerup", clearPointers);
     window.addEventListener("pointercancel", clearPointers);
@@ -1694,6 +2306,7 @@
     const shell = document.getElementById("workspace-shell");
     const btn = document.getElementById("btn-present");
     const label = document.getElementById("present-label");
+    document.body.classList.toggle("presentation-active", state.presentationMode);
     if (shell) shell.classList.toggle("presentation-mode", state.presentationMode);
     if (btn) btn.setAttribute("aria-pressed", String(state.presentationMode));
     if (label) label.textContent = state.presentationMode ? "Exit (Esc)" : "Present";
@@ -1807,6 +2420,7 @@
           updateDisasterImpactAndPolicy();
           updateHoverInspector();
           updateUncertaintyKPIs();
+          updateRegionalInsightsLive();
         }
         renderMapsOnly();
       }
@@ -1830,7 +2444,7 @@
       }
     }
 
-    // Build Grouped Preset Chips (Grader / What-if / Hazard)
+    // Build Grouped Preset Chips
     const presetContainer = document.getElementById("preset-buttons");
     presetContainer.innerHTML = "";
     const groups = [
@@ -1892,6 +2506,74 @@
       block.appendChild(title);
       block.appendChild(wrap);
       presetContainer.appendChild(block);
+    });
+
+    // Stitch State Selector & Search Input
+    const stateButtons = document.querySelectorAll(".state-btn");
+    const searchInput = document.getElementById("state-search");
+    stateButtons.forEach((btn) => {
+      btn.addEventListener("click", () => selectIndianState(btn.dataset.state));
+    });
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        const q = searchInput.value.trim().toLowerCase();
+        stateButtons.forEach((btn) => {
+          const match = btn.dataset.state.toLowerCase().includes(q);
+          btn.style.display = match ? "flex" : "none";
+        });
+      });
+    }
+    initRegionalMapClick();
+
+    // Primary Stitch Top Navigation Pills + 3D Globe Modal
+    document.querySelectorAll("#primary-nav-tabs .nav-pill").forEach((pill) => {
+      pill.addEventListener("click", () => {
+        const target = pill.dataset.nav;
+        document.querySelectorAll("#primary-nav-tabs .nav-pill").forEach((p) =>
+          p.classList.toggle("active", p === pill)
+        );
+        if (target === "globe") {
+          openGlobeOverlay();
+        } else if (target === "regional") {
+          document.getElementById("sec-regional-insights").scrollIntoView({ behavior: "smooth" });
+        } else if (target === "simulate") {
+          document.getElementById("workspace-shell").scrollIntoView({ behavior: "smooth" });
+        } else if (target === "multiverse") {
+          document.getElementById("sec-multiverse-stage").scrollIntoView({ behavior: "smooth" });
+        } else if (target === "analytics") {
+          document.getElementById("sec-analytics-dock").scrollIntoView({ behavior: "smooth" });
+        }
+      });
+    });
+
+    document.getElementById("btn-country-pill").addEventListener("click", openGlobeOverlay);
+    document.getElementById("btn-explore-india").addEventListener("click", animateZoomIntoIndiaAndClose);
+    document.getElementById("btn-skip-globe").addEventListener("click", () => {
+      document.getElementById("globe-intro-overlay").classList.add("hidden");
+      restoreRegionalNavActive();
+    });
+
+    const globeCanvas = document.getElementById("canvas-earth-globe");
+    if (globeCanvas) {
+      globeCanvas.addEventListener("pointerdown", (ev) => {
+        state.globeDragging = true;
+        state.globeDragLast = { x: ev.clientX, y: ev.clientY };
+      });
+      window.addEventListener("pointermove", (ev) => {
+        if (!state.globeDragging || !state.globeDragLast) return;
+        const dx = ev.clientX - state.globeDragLast.x;
+        const dy = ev.clientY - state.globeDragLast.y;
+        state.globeDragLast = { x: ev.clientX, y: ev.clientY };
+        state.globeRotLon += dx * 0.35;
+        state.globeRotLat = Math.max(-70, Math.min(70, state.globeRotLat - dy * 0.35));
+      });
+    }
+
+    // Light / Dark Theme Toggle
+    document.getElementById("btn-theme-toggle").addEventListener("click", () => {
+      state.darkTheme = !state.darkTheme;
+      document.body.classList.toggle("dark-theme", state.darkTheme);
+      renderMapsOnly();
     });
 
     // Left Rail Controls
@@ -2128,6 +2810,12 @@
         Boolean(activeEl && activeEl.isContentEditable);
 
       if (ev.key === "Escape") {
+        const globeOverlay = document.getElementById("globe-intro-overlay");
+        if (globeOverlay && !globeOverlay.classList.contains("hidden")) {
+          ev.preventDefault();
+          globeOverlay.classList.add("hidden");
+          return;
+        }
         if (state.presentationMode) {
           ev.preventDefault();
           setPresentationMode(false);
