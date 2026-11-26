@@ -661,53 +661,161 @@
     }
   }
 
-  // --- Coordinate Projection & Georeferenced India Vector Overlay ---
+  // --- Coordinate Projection & Georeferenced Official 37-State India GeoJSON Overlay ---
   function lonLatToCanvasXY(lon, lat, W, H) {
     const x = ((lon - 65.5) / 35.0) * W;
     const y = ((37.5 - lat) / 31.0) * H;
     return [x, y];
   }
 
-  function drawIndiaVectorBoundaries(ctx, W, H, showStateAbbrev) {
-    ctx.save();
-    // Internal State Boundaries
-    ctx.strokeStyle = state.darkTheme ? "rgba(226, 232, 240, 0.35)" : "rgba(15, 23, 42, 0.28)";
-    ctx.lineWidth = 1.0;
-    ctx.beginPath();
-    for (const poly of INDIA_STATE_LINES_LONLAT) {
-      for (let i = 0; i < poly.length; i++) {
-        const [x, y] = lonLatToCanvasXY(poly[i][0], poly[i][1], W, H);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-    }
-    ctx.stroke();
-
-    // Accurate India Outer Country Boundary
-    ctx.strokeStyle = state.darkTheme ? "rgba(241, 245, 249, 0.92)" : "rgba(16, 27, 56, 0.88)";
-    ctx.lineWidth = 1.9;
-    ctx.beginPath();
-    for (let i = 0; i < INDIA_BORDER_LONLAT.length; i++) {
-      const [x, y] = lonLatToCanvasXY(INDIA_BORDER_LONLAT[i][0], INDIA_BORDER_LONLAT[i][1], W, H);
+  function traceRingOnCtx(ctx, ring, W, H) {
+    if (!ring || !ring.length) return;
+    for (let i = 0; i < ring.length; i++) {
+      const [x, y] = lonLatToCanvasXY(ring[i][0], ring[i][1], W, H);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
     ctx.closePath();
-    ctx.stroke();
+  }
 
+  function traceFeatureOnCtx(ctx, feat, W, H) {
+    if (!feat || !feat.coordinates) return;
+    if (feat.type === "Polygon") {
+      for (const ring of feat.coordinates) {
+        traceRingOnCtx(ctx, ring, W, H);
+      }
+    } else if (feat.type === "MultiPolygon") {
+      for (const poly of feat.coordinates) {
+        for (const ring of poly) {
+          traceRingOnCtx(ctx, ring, W, H);
+        }
+      }
+    }
+  }
+
+  function traceAllIndiaGeoOnCtx(ctx, W, H) {
+    const geo = window.INDIA_STATES_GEO;
+    if (geo && Array.isArray(geo.features) && geo.features.length) {
+      for (const feat of geo.features) {
+        traceFeatureOnCtx(ctx, feat, W, H);
+      }
+      return true;
+    }
+    // Fallback polygon if india_geo.js is absent
+    traceRingOnCtx(ctx, INDIA_BORDER_LONLAT, W, H);
+    return false;
+  }
+
+  function findGeoFeatureByName(stateName) {
+    const geo = window.INDIA_STATES_GEO;
+    if (!geo || !Array.isArray(geo.features)) return null;
+    const norm = String(stateName || "").trim().toLowerCase();
+    return (
+      geo.features.find((f) => String(f.name || "").toLowerCase() === norm) ||
+      geo.features.find((f) => String(f.name || "").toLowerCase().includes(norm)) ||
+      null
+    );
+  }
+
+  function pointInRingLonLat(lon, lat, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0], yi = ring[i][1];
+      const xj = ring[j][0], yj = ring[j][1];
+      const intersect =
+        yi > lat !== yj > lat &&
+        lon < ((xj - xi) * (lat - yi)) / (yj - yi || 1e-12) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function pointInFeatureLonLat(lon, lat, feat) {
+    if (!feat || !feat.bbox) return false;
+    const [minLon, minLat, maxLon, maxLat] = feat.bbox;
+    if (lon < minLon || lon > maxLon || lat < minLat || lat > maxLat) return false;
+    if (feat.type === "Polygon") {
+      return feat.coordinates.length > 0 && pointInRingLonLat(lon, lat, feat.coordinates[0]);
+    }
+    if (feat.type === "MultiPolygon") {
+      for (const poly of feat.coordinates) {
+        if (poly.length > 0 && pointInRingLonLat(lon, lat, poly[0])) return true;
+      }
+    }
+    return false;
+  }
+
+  function drawIndiaVectorBoundaries(ctx, W, H, showStateAbbrev, highlightSelectedState) {
+    ctx.save();
+    const geo = window.INDIA_STATES_GEO;
+    if (geo && Array.isArray(geo.features) && geo.features.length) {
+      // 1. Crisp internal & coastal boundaries for all 37 States & UTs
+      ctx.strokeStyle = state.darkTheme ? "rgba(241, 245, 249, 0.56)" : "rgba(15, 23, 42, 0.52)";
+      ctx.lineWidth = showStateAbbrev ? 1.15 : 1.05;
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      for (const feat of geo.features) {
+        traceFeatureOnCtx(ctx, feat, W, H);
+      }
+      ctx.stroke();
+
+      // 2. Highlight active selected state polygon
+      if (highlightSelectedState && state.selectedState) {
+        const selFeat = findGeoFeatureByName(state.selectedState);
+        if (selFeat) {
+          ctx.beginPath();
+          traceFeatureOnCtx(ctx, selFeat, W, H);
+          ctx.fillStyle = state.darkTheme
+            ? "rgba(96, 165, 250, 0.16)"
+            : "rgba(255, 255, 255, 0.24)";
+          ctx.fill();
+          ctx.strokeStyle = state.darkTheme ? "#60A5FA" : "#0058BF";
+          ctx.lineWidth = 2.4;
+          ctx.stroke();
+        }
+      }
+    } else {
+      // Fallback polylines
+      ctx.strokeStyle = state.darkTheme ? "rgba(226, 232, 240, 0.35)" : "rgba(15, 23, 42, 0.28)";
+      ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      for (const poly of INDIA_STATE_LINES_LONLAT) {
+        for (let i = 0; i < poly.length; i++) {
+          const [x, y] = lonLatToCanvasXY(poly[i][0], poly[i][1], W, H);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = state.darkTheme ? "rgba(241, 245, 249, 0.92)" : "rgba(16, 27, 56, 0.88)";
+      ctx.lineWidth = 1.9;
+      ctx.beginPath();
+      traceRingOnCtx(ctx, INDIA_BORDER_LONLAT, W, H);
+      ctx.stroke();
+    }
+
+    // 3. Crisp Haloed State Labels
     if (showStateAbbrev) {
-      ctx.font = "600 9.5px Inter, system-ui, sans-serif";
-      ctx.fillStyle = state.darkTheme ? "rgba(241, 245, 249, 0.85)" : "rgba(16, 27, 56, 0.82)";
+      ctx.font = "700 9.5px Inter, system-ui, sans-serif";
       ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       for (const [sName, info] of Object.entries(INDIA_STATES)) {
         const [sx, sy] = lonLatToCanvasXY(info.centerLon, info.centerLat, W, H);
+        const isSel = sName === state.selectedState;
+        ctx.lineWidth = 2.8;
+        ctx.strokeStyle = state.darkTheme ? "rgba(6, 11, 20, 0.88)" : "rgba(255, 255, 255, 0.92)";
+        ctx.strokeText(sName, sx, sy - 6);
+        ctx.fillStyle = isSel
+          ? (state.darkTheme ? "#60A5FA" : "#0058BF")
+          : (state.darkTheme ? "#F8FAFC" : "#101B38");
         ctx.fillText(sName, sx, sy - 6);
       }
     }
     ctx.restore();
   }
 
-  // --- Regional India Map Canvas (Stitch Col 2 Card) ---
+  // --- Regional India Map Canvas (Stitch Col 2 Card — Exact 37-State GeoJSON Clipped Map) ---
   function drawRegionalIndiaCanvas(field2d, minVal, maxVal) {
     const canvas = document.getElementById("canvas-india-regional");
     if (!canvas || !field2d) return;
@@ -716,12 +824,20 @@
     const H = canvas.height;
     const invSpan = 1.0 / (maxVal - minVal || 1.0);
 
-    // 1. Ocean background
-    ctx.fillStyle = state.darkTheme ? "#081226" : "#E6F2FF";
+    // 1. Soft Ocean Gradient Background (Arabian Sea & Bay of Bengal)
+    const oceanGrad = ctx.createLinearGradient(0, 0, 0, H);
+    if (state.darkTheme) {
+      oceanGrad.addColorStop(0, "#071124");
+      oceanGrad.addColorStop(1, "#0B1B36");
+    } else {
+      oceanGrad.addColorStop(0, "#EDF5FF");
+      oceanGrad.addColorStop(1, "#DCEBFF");
+    }
+    ctx.fillStyle = oceanGrad;
     ctx.fillRect(0, 0, W, H);
 
-    // 2. Subtle Lat/Lon Grid lines
-    ctx.strokeStyle = state.darkTheme ? "rgba(96, 165, 250, 0.12)" : "rgba(0, 88, 191, 0.09)";
+    // 2. Subtle Lat/Lon Graticule Lines + Degree Labels
+    ctx.strokeStyle = state.darkTheme ? "rgba(96, 165, 250, 0.12)" : "rgba(0, 88, 191, 0.08)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let lon = 70; lon <= 95; lon += 5) {
@@ -736,45 +852,66 @@
     }
     ctx.stroke();
 
-    // 3. Clip the smooth bilinear climate heatmap inside India's exact geographic polygon + coastal buffer
+    // Subtle Sea Labels
+    ctx.save();
+    ctx.font = "600 9px Inter, system-ui, sans-serif";
+    ctx.fillStyle = state.darkTheme ? "rgba(148, 163, 184, 0.55)" : "rgba(37, 99, 235, 0.45)";
+    ctx.textAlign = "center";
+    const [asX, asY] = lonLatToCanvasXY(69.8, 15.0, W, H);
+    ctx.fillText("ARABIAN", asX, asY);
+    ctx.fillText("SEA", asX, asY + 11);
+    const [bobX, bobY] = lonLatToCanvasXY(89.5, 15.0, W, H);
+    ctx.fillText("BAY OF", bobX, bobY);
+    ctx.fillText("BENGAL", bobX, bobY + 11);
+    ctx.restore();
+
+    // 3. Render Smooth Bilinear Climate Heatmap to Offscreen Canvas
     const offscreen = document.createElement("canvas");
     offscreen.width = W;
     offscreen.height = H;
     const octx = offscreen.getContext("2d");
     const img = octx.createImageData(W, H);
     const buf = img.data;
+    const oro = state.data ? state.data.grid.orography_m : null;
     let p = 0;
     for (let py = 0; py < H; py++) {
       const rf = (1.0 - (py + 0.5) / H) * NLAT - 0.5;
       for (let px = 0; px < W; px++) {
         const cf = ((px + 0.5) / W) * NLON - 0.5;
         const val = bilerpGrid(field2d, rf, cf);
+        const elev = oro ? bilerpGrid(oro, rf, cf) : 0;
         const norm = (val - minVal) * invSpan;
         const rgb = sampleStops(SEQ_STOPS, norm);
-        buf[p++] = rgb[0];
-        buf[p++] = rgb[1];
-        buf[p++] = rgb[2];
-        buf[p++] = 228;
+        const shade = 1.0 + Math.min(0.10, (elev / 4800.0) * 0.10);
+        buf[p++] = Math.min(255, (rgb[0] * shade) | 0);
+        buf[p++] = Math.min(255, (rgb[1] * shade) | 0);
+        buf[p++] = Math.min(255, (rgb[2] * shade) | 0);
+        buf[p++] = 238;
       }
     }
     octx.putImageData(img, 0, 0);
 
+    // 4. Subtle Coastal Drop Shadow + Clip Heatmap Strictly Inside Official 37-State India GeoJSON Polygons
     ctx.save();
     ctx.beginPath();
-    for (let i = 0; i < INDIA_BORDER_LONLAT.length; i++) {
-      const [x, y] = lonLatToCanvasXY(INDIA_BORDER_LONLAT[i][0], INDIA_BORDER_LONLAT[i][1], W, H);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.closePath();
+    traceAllIndiaGeoOnCtx(ctx, W, H);
+    ctx.shadowColor = state.darkTheme ? "rgba(0, 0, 0, 0.55)" : "rgba(0, 88, 191, 0.22)";
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = state.darkTheme ? "#0F172A" : "#FFFFFF";
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    traceAllIndiaGeoOnCtx(ctx, W, H);
     ctx.clip();
     ctx.drawImage(offscreen, 0, 0);
     ctx.restore();
 
-    // 4. Draw State Boundaries & Country Border + State Labels
-    drawIndiaVectorBoundaries(ctx, W, H, true);
+    // 5. Draw All 37 State Polygon Borders, Highlight Active State & Render Haloed Labels
+    drawIndiaVectorBoundaries(ctx, W, H, true, true);
 
-    // 5. Highlight Selected State Position & Move #map-pin
+    // 6. Move #map-pin to Selected State Centroid
     const stInfo = INDIA_STATES[state.selectedState] || INDIA_STATES["Karnataka"];
     const [pinX, pinY] = lonLatToCanvasXY(stInfo.centerLon, stInfo.centerLat, W, H);
     const pinEl = document.getElementById("map-pin");
@@ -1138,7 +1275,7 @@
     }
 
     // Accurate Georeferenced India Country & State Boundaries Overlay
-    drawIndiaVectorBoundaries(ctx, W, H, false);
+    drawIndiaVectorBoundaries(ctx, W, H, false, true);
 
     // Wind Vectors
     if (uWind2d && vWind2d) {
@@ -1347,22 +1484,48 @@
       ctx.stroke();
     }
 
-    // Highlighted Georeferenced India Polygon on the 3D Globe
+    // Highlighted Georeferenced 37-State India Polygons on the 3D Globe
     ctx.fillStyle = "rgba(16, 185, 129, 0.72)";
     ctx.strokeStyle = "#FFFFFF";
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    let started = false;
-    for (const [lon, lat] of INDIA_BORDER_LONLAT) {
-      const pt = project3D(lon, lat);
-      if (!pt) continue;
-      if (!started) { ctx.moveTo(pt[0], pt[1]); started = true; }
-      else ctx.lineTo(pt[0], pt[1]);
-    }
-    if (started) {
-      ctx.closePath();
+    ctx.lineWidth = 1.4;
+    const geo = window.INDIA_STATES_GEO;
+    if (geo && Array.isArray(geo.features) && geo.features.length) {
+      ctx.beginPath();
+      const traceRing3D = (ring) => {
+        let s = false;
+        for (const [lon, lat] of ring) {
+          const pt = project3D(lon, lat);
+          if (!pt) continue;
+          if (!s) { ctx.moveTo(pt[0], pt[1]); s = true; }
+          else ctx.lineTo(pt[0], pt[1]);
+        }
+        if (s) ctx.closePath();
+      };
+      for (const feat of geo.features) {
+        if (feat.type === "Polygon") {
+          for (const ring of feat.coordinates) traceRing3D(ring);
+        } else if (feat.type === "MultiPolygon") {
+          for (const poly of feat.coordinates) {
+            for (const ring of poly) traceRing3D(ring);
+          }
+        }
+      }
       ctx.fill();
       ctx.stroke();
+    } else {
+      ctx.beginPath();
+      let started = false;
+      for (const [lon, lat] of INDIA_BORDER_LONLAT) {
+        const pt = project3D(lon, lat);
+        if (!pt) continue;
+        if (!started) { ctx.moveTo(pt[0], pt[1]); started = true; }
+        else ctx.lineTo(pt[0], pt[1]);
+      }
+      if (started) {
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
     }
 
     // Target Reticle on India (20.5°N, 78.9°E)
@@ -2166,6 +2329,16 @@
       const clickLon = 65.5 + xFrac * 35.0;
       const clickLat = 37.5 - yFrac * 31.0;
 
+      // First test exact GeoJSON polygon hit across our 8 featured states
+      for (const sName of Object.keys(INDIA_STATES)) {
+        const feat = findGeoFeatureByName(sName);
+        if (feat && pointInFeatureLonLat(clickLon, clickLat, feat)) {
+          selectIndianState(sName);
+          return;
+        }
+      }
+
+      // Fallback to nearest centroid if clicked near a featured state
       let bestState = null;
       let bestDist = Infinity;
       for (const [sName, info] of Object.entries(INDIA_STATES)) {
