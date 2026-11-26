@@ -139,11 +139,13 @@ def train_model(
     for epoch in range(1, epochs + 1):
         t0 = time.perf_counter()
         if level >= 3 and epochs >= 6:
-            cur_steps = 2 if epoch <= 2 else (4 if epoch <= 5 else rollout_steps)
+            cur_steps = 2 if epoch <= 2 else (4 if epoch <= 4 else rollout_steps)
+            epoch_train_idx = train_indices[(epoch - 1) % 3 :: 3]
         else:
             cur_steps = 1 if level == 2 else rollout_steps
+            epoch_train_idx = train_indices
 
-        perm = rng.permutation(train_indices)
+        perm = rng.permutation(epoch_train_idx)
         model.train()
         tr_loss_sum, tr_batches = 0.0, 0
         for start in range(0, len(perm), batch_size):

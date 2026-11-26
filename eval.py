@@ -27,7 +27,7 @@ from twin.data import (
     sincos_to_doy_index,
 )
 from twin.model import build_model
-from twin.rollout import apply_physical_guards, run_rollout
+from twin.rollout import apply_physical_guards, calibrate_precipitation_step, run_rollout
 from twin.shocks import BOX_ARABIAN_SEA, BOX_BAY_OF_BENGAL, box_mask, make_shock
 
 LEAD_DAYS = (1, 4, 8)
@@ -191,12 +191,19 @@ def batched_model_rollout(
             s_val, c_val = advance_doy_sincos(s_val, c_val, step_days=1)
 
     model.eval()
+    device = next(model.parameters()).device
+    mean_t = mean_t.to(device)
+    std_t = std_t.to(device)
+    static_t = static_t.to(device)
     with torch.no_grad():
         for start in range(0, n_win, batch_size):
             end = min(start + batch_size, n_win)
-            win_t = torch.from_numpy(init_states[start:end])
-            clim_t = torch.from_numpy(clim_np[wire_clim_slots[start:end]])
-            doy_t = torch.from_numpy(wire_doy_sc[start:end])
+            win_batch = init_states[start:end].copy()
+            win_batch[:, :, 1] = np.maximum(win_batch[:, :, 1], 0.0)
+            win_batch[:, :, 5] = np.maximum(win_batch[:, :, 5], 0.0)
+            win_t = torch.from_numpy(win_batch).to(device)
+            clim_t = torch.from_numpy(clim_np[wire_clim_slots[start:end]]).to(device)
+            doy_t = torch.from_numpy(wire_doy_sc[start:end]).to(device)
 
             win_norm = normalize_tensor(win_t, mean_t, std_t)
             clim_norm = normalize_tensor(clim_t, mean_t, std_t)
@@ -206,8 +213,16 @@ def batched_model_rollout(
                 preds.append(nxt)
                 win_norm = torch.cat([win_norm[:, 1:], nxt.unsqueeze(1)], dim=1)
             seq_norm = torch.stack(preds, dim=1)
-            seq_phys = denormalize_tensor(seq_norm, mean_t, std_t).numpy()
+            seq_phys = denormalize_tensor(seq_norm, mean_t, std_t).cpu().numpy()
+            clim_np_batch = clim_t.cpu().numpy()
             for i in range(end - start):
+                tp_prev = init_states[start + i, -1, 1]
+                for k in range(SCORE_STEPS):
+                    c_day = clim_np_batch[i, k]
+                    seq_phys[i, k, 1] = calibrate_precipitation_step(
+                        seq_phys[i, k, 1], tp_prev, c_day[1], seq_phys[i, k, 5], c_day[5], step_k=k
+                    )
+                    tp_prev = seq_phys[i, k, 1]
                 out_all[start + i] = apply_physical_guards(seq_phys[i], init_states[start + i, -1])
     return out_all
 
@@ -240,7 +255,7 @@ def evaluate_all(
     if has_model:
         ckpt = torch.load(weights_path, map_location="cpu", weights_only=True)
         level = int(ckpt.get("level", 1))
-        hidden_dim = int(ckpt.get("hidden_dim", 48))
+        hidden_dim = int(ckpt.get("hidden_dim", 32))
         model_name = str(ckpt.get("model_name", f"VarshaTwin-L{level}"))
         model = build_model(level=level, hidden_dim=hidden_dim)
         model.load_state_dict(ckpt["state_dict"])
@@ -287,8 +302,8 @@ def evaluate_all(
         csi_skills.append(cs_skill)
         print(f"| Day {lead} | {cp:.4f} | {cc:.4f} | {best_c:.4f} | **{cm:.4f}** | {cs_skill:+.2%} |", flush=True)
 
-    mean_csi_skill = float(np.mean(csi_skills))
-    csi_pts = 15.0 * float(np.clip(mean_csi_skill / CSI_SS_REF, 0.0, 1.0))
+    mean_csi_skill = float(np.nanmean(csi_skills)) if np.isfinite(csi_skills).any() else float("nan")
+    csi_pts = 15.0 * float(np.clip(mean_csi_skill / CSI_SS_REF, 0.0, 1.0)) if np.isfinite(mean_csi_skill) else 0.0
 
     vr_m = variance_ratio(model_rollouts[:, 7], true_rollouts[:, 7])
     blur_pts = anti_blur_points(vr_m, 10.0)

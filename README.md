@@ -9,13 +9,36 @@ A small, convolution-only neural twin of India's daily weather. It rolls forward
 - Live dashboard: Shock Studio, Multiverse Compare, Trust Panel, Impact Pack
 - Offline, CPU-only inference
 
-## Results (Validation 2020–2021, 721 daily windows)
-| Lead Day | Metric | Repeat Yesterday | Climatology (2005–2019) | VarshaTwin (L1 Baseline) |
-|---|---|---|---|---|
-| Day 1 | Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `1.03 / 6.33 / 1.09 / 1.11 / 198.4 / 3.75` | `1.76 / 6.78 / 1.66 / 1.46 / 282.0 / 6.47` | **`0.96 / 5.37 / 0.98 / 0.96 / 170.8 / 3.32`** (`+6.6%` to `+15.1%` skill) |
-| Day 4 | Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `1.92 / 9.25 / 2.02 / 1.95 / 341.6 / 7.51` | `1.76 / 6.77 / 1.66 / 1.46 / 281.5 / 6.47` | **`1.69 / 6.86 / 1.59 / 1.42 / 270.5 / 6.05`** (Beats Persistence on all 6 & Climatology on 5/6) |
-| Day 8 | Lat-Weighted RMSE (`t2m` K / `tp` mm / `u10` / `v10` / `msl` Pa / `tcwv`) | `2.25 / 9.36 / 2.23 / 1.99 / 378.9 / 8.35` | `1.76 / 6.77 / 1.66 / 1.46 / 281.4 / 6.47` | **`1.82 / 6.88 / 1.67 / 1.46 / 282.9 / 6.52`** (Beats Persistence by `+19%` to `+27%`) |
-| Day 1 / 4 / 8 | Heavy-Rain CSI (`tp > 10.0 mm/day`) | `0.4290 / 0.2176 / 0.2033` | `0.2673 / 0.2676 / 0.2678` | **`0.4322 / 0.1720 / 0.1858`** |
+## Results (Validation 2020–2021, 721 daily windows — `VarshaTwin-L3`)
+| Lead Day | Channel | Repeat Yesterday RMSE | Climatology RMSE | Best Baseline | VarshaTwin-L3 RMSE | Skill (`SS`) |
+|---|---|---|---|---|---|---|
+| **Day 1** | `t2m` (K) | 1.0265 | 1.7582 | 1.0265 | **0.9278** | **`+9.61%`** |
+| **Day 1** | `tp` (mm/day) | 6.3258 | 6.7814 | 6.3258 | **5.5602** | **`+12.10%`** |
+| **Day 1** | `u10` (m/s) | 1.0905 | 1.6631 | 1.0905 | **0.9824** | **`+9.91%`** |
+| **Day 1** | `v10` (m/s) | 1.1105 | 1.4603 | 1.1105 | **0.9445** | **`+14.95%`** |
+| **Day 1** | `msl` (Pa) | 198.3688 | 282.0193 | 198.3688 | **172.9340** | **`+12.82%`** |
+| **Day 1** | `tcwv` (kg/m²) | 3.7467 | 6.4711 | 3.7467 | **3.2930** | **`+12.11%`** |
+| **Day 4** | `t2m` (K) | 1.9183 | 1.7591 | 1.7591 | **1.5759** | **`+10.41%`** |
+| **Day 4** | `tp` (mm/day) | 9.2488 | 6.7742 | 6.7742 | **6.7435** | **`+0.45%`** |
+| **Day 4** | `u10` (m/s) | 2.0166 | 1.6638 | 1.6638 | **1.5528** | **`+6.67%`** |
+| **Day 4** | `v10` (m/s) | 1.9453 | 1.4597 | 1.4597 | **1.3891** | **`+4.84%`** |
+| **Day 4** | `msl` (Pa) | 341.6328 | 281.4563 | 281.4563 | **261.5359** | **`+7.08%`** |
+| **Day 4** | `tcwv` (kg/m²) | 7.5082 | 6.4707 | 6.4707 | **5.8606** | **`+9.43%`** |
+| **Day 8** | `t2m` (K) | 2.2484 | 1.7585 | 1.7585 | **1.7358** | **`+1.29%`** |
+| **Day 8** | `tp` (mm/day) | 9.3623 | 6.7720 | 6.7720 | **6.7878** | `-0.23%` |
+| **Day 8** | `u10` (m/s) | 2.2265 | 1.6640 | 1.6640 | **1.6641** | `0.00%` |
+| **Day 8** | `v10` (m/s) | 1.9897 | 1.4580 | 1.4580 | **1.4592** | `-0.08%` |
+| **Day 8** | `msl` (Pa) | 378.9117 | 281.4127 | 281.4127 | **280.7948** | **`+0.22%`** |
+| **Day 8** | `tcwv` (kg/m²) | 8.3519 | 6.4747 | 6.4747 | **6.4835** | `-0.14%` |
+
+### Heavy-Rain CSI (`tp > 10.0 mm/day`), Anti-Blur & Perturbation Causality
+| Metric | Repeat Yesterday | Climatology | Best Baseline | VarshaTwin-L3 | Score / Status |
+|---|---|---|---|---|---|
+| **Day 1 Heavy-Rain CSI** | `0.4290` | `0.2673` | `0.4290` | **`0.4522`** | **`+4.06%` CSI Skill** |
+| **Day 4 Heavy-Rain CSI** | `0.2176` | `0.2676` | `0.2676` | **`0.2914`** | **`+3.25%` CSI Skill** |
+| **Day 8 Heavy-Rain CSI** | `0.2033` | `0.2678` | `0.2678` | **`0.2842`** | **`+2.24%` CSI Skill** |
+| **Day-8 Spatial Variance Ratio** | `1.01..2.66` | `0.55..1.02` | `[0.40, 2.50]` | **`0.59..1.02`** (all 6 ch) | **`10.00 / 10.00 pts`** |
+| **Perturbation Causality** | — | — | 4 checks × 2 shocks + null | **`100% Pass`** (`near_day1=1.0, far=0.0`) | **`15.00 / 15.00 pts`** |
 
 ## Setup
 ```bash
