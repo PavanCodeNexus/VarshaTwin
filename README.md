@@ -55,41 +55,99 @@ All numbers below are measured by running `python eval.py --data data/india_clim
 
 ---
 
-## Quickstart (Setup, Serve & Validate)
+## Quickstart (Setup, Serve & Validate — Windows, PowerShell, Linux & macOS)
 
 ### 1. Clone Repository & Install Dependencies
-```bash
+
+#### A. Windows PowerShell
+```powershell
 git clone https://github.com/PavanCodeNexus/VarshaTwin.git
 cd VarshaTwin
 
 python -m venv .venv
-# On Linux / macOS:
-source .venv/bin/activate
-# On Windows (PowerShell):
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
 .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
 
+#### B. Windows Command Prompt (`cmd.exe`)
+```cmd
+git clone https://github.com/PavanCodeNexus/VarshaTwin.git
+cd VarshaTwin
+
+python -m venv .venv
+.venv\Scripts\activate.bat
+pip install -r requirements.txt
+```
+
+#### C. Linux & macOS (`bash` / `zsh`)
+```bash
+git clone https://github.com/PavanCodeNexus/VarshaTwin.git
+cd VarshaTwin
+
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 *(No `git lfs pull` is required because `weights/twin.pt` and `weights/static_fields.npz` are committed directly as plain Git binaries).*
 
-### 2. Start the Inference Server (`Terminal 1`)
-Keep this terminal open while validating or using the dashboard:
-```bash
-python serve.py --port 8000
-```
-*(Note: When `serve.py` starts, it loads `weights/twin.pt` and `weights/static_fields.npz` into memory and listens quietly on `0.0.0.0:8000` with `log_level="warning"` — do not run `python serve.py --port 8000` a second time in another tab, or port `8000` will report `[Errno 10048] address already in use`).*
+---
+
+### 2. Start the Inference Server (`Terminal 1` — Keep This Open)
+
+- **Windows (PowerShell / CMD):**
+  ```powershell
+  python serve.py --port 8000
+  ```
+- **Linux / macOS:**
+  ```bash
+  python3 serve.py --port 8000
+  ```
+*(When `serve.py` starts, it prints `VarshaTwin server ready (VarshaTwin-L3) -> listening on http://0.0.0.0:8000`. Keep Terminal 1 running and open a second terminal for the dashboard or tests).*
+
+> **Troubleshooting Port `8000` Already in Use (`Errno 10048` / `Errno 98`):**
+> - **Windows PowerShell (free port 8000 & start):**
+>   ```powershell
+>   Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force } ; python serve.py --port 8000
+>   ```
+> - **Windows CMD (free port 8000):**
+>   ```cmd
+>   for /f "tokens=5" %a in ('netstat -aon ^| findstr :8000') do taskkill /F /PID %a
+>   ```
+> - **Linux / macOS (free port 8000 & start):**
+>   ```bash
+>   kill -9 $(lsof -t -i:8000) 2>/dev/null ; python3 serve.py --port 8000
+>   ```
+
+---
 
 ### 3. Open the Live Interactive Dashboard (`Terminal 2` or Browser)
-With `python serve.py --port 8000` running in Terminal 1:
-- **Option A (Direct):** Double-click or open [`dashboard/index.html`](dashboard/index.html) directly in Chrome / Edge / Firefox.
-- **Option B (Local Static Server in Terminal 2):**
-  ```bash
-  python -m http.server 8080 --directory dashboard
+
+With `serve.py` running in Terminal 1:
+
+- **Windows PowerShell (serve & auto-open browser):**
+  ```powershell
+  Start-Process "http://127.0.0.1:8080/index.html" ; python -m http.server 8080 --directory dashboard
   ```
-  Then open **[http://127.0.0.1:8080](http://127.0.0.1:8080)** in your browser. Every map, KPI, state forecast, and trust badge is computed live from `POST /simulate`.
+- **Windows CMD (serve & auto-open browser):**
+  ```cmd
+  start http://127.0.0.1:8080/index.html && python -m http.server 8080 --directory dashboard
+  ```
+- **macOS (serve & auto-open browser):**
+  ```bash
+  (sleep 1 && open "http://127.0.0.1:8080/index.html") & python3 -m http.server 8080 --directory dashboard
+  ```
+- **Linux (serve & auto-open browser):**
+  ```bash
+  (sleep 1 && xdg-open "http://127.0.0.1:8080/index.html") & python3 -m http.server 8080 --directory dashboard
+  ```
+*(Or simply open [`dashboard/index.html`](dashboard/index.html) directly in Chrome / Edge / Firefox / Safari).*
+
+---
 
 ### 4. Run the Automated Test Suite & Official Kit Validator (`Terminal 2`)
-In a second terminal (with the virtual environment activated):
+
+Activate the virtual environment in a second terminal and run:
 ```bash
 # Run our 4 self-contained contract, zero-shock, locality & anti-cheat test suites:
 python tests/test_contract.py
@@ -100,6 +158,8 @@ python tests/test_repo_scan.py
 # Run the official hackathon kit schema validator (when monsoon_r1 is installed / in PYTHONPATH):
 python -m monsoon_r1.schema_validator http://localhost:8000
 ```
+
+---
 
 ### 5. Re-Train & Evaluate from Scratch
 Place `india_climate_train.nc` inside `data/india_climate_train.nc` (gitignored per hackathon rules) and run:
