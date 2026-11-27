@@ -57,35 +57,51 @@ All numbers below are measured by running `python eval.py --data data/india_clim
 
 ## Quickstart (Setup, Serve & Validate)
 
-### 1. Install Dependencies
+### 1. Clone Repository & Install Dependencies
 ```bash
+git clone https://github.com/PavanCodeNexus/VarshaTwin.git
+cd VarshaTwin
+
 python -m venv .venv
-# On Linux/macOS:
+# On Linux / macOS:
 source .venv/bin/activate
-# On Windows PowerShell:
-.venv\Scripts\Activate.ps1
+# On Windows (PowerShell):
+.\.venv\Scripts\Activate.ps1
 
 pip install -r requirements.txt
 ```
 *(No `git lfs pull` is required because `weights/twin.pt` and `weights/static_fields.npz` are committed directly as plain Git binaries).*
 
-### 2. Run the Inference Server & Official Kit Validator
+### 2. Start the Inference Server (`Terminal 1`)
+Keep this terminal open while validating or using the dashboard:
 ```bash
 python serve.py --port 8000
 ```
-In a second terminal, run the official schema and physics validator (and our test suite):
+*(Note: When `serve.py` starts, it loads `weights/twin.pt` and `weights/static_fields.npz` into memory and listens quietly on `0.0.0.0:8000` with `log_level="warning"` — do not run `python serve.py --port 8000` a second time in another tab, or port `8000` will report `[Errno 10048] address already in use`).*
+
+### 3. Open the Live Interactive Dashboard (`Terminal 2` or Browser)
+With `python serve.py --port 8000` running in Terminal 1:
+- **Option A (Direct):** Double-click or open [`dashboard/index.html`](dashboard/index.html) directly in Chrome / Edge / Firefox.
+- **Option B (Local Static Server in Terminal 2):**
+  ```bash
+  python -m http.server 8080 --directory dashboard
+  ```
+  Then open **[http://127.0.0.1:8080](http://127.0.0.1:8080)** in your browser. Every map, KPI, state forecast, and trust badge is computed live from `POST /simulate`.
+
+### 4. Run the Automated Test Suite & Official Kit Validator (`Terminal 2`)
+In a second terminal (with the virtual environment activated):
 ```bash
-PYTHONPATH=yug-monsoon-kit python -m monsoon_r1.schema_validator http://localhost:8000
+# Run our 4 self-contained contract, zero-shock, locality & anti-cheat test suites:
 python tests/test_contract.py
 python tests/test_zero_shock.py
 python tests/test_locality.py
 python tests/test_repo_scan.py
+
+# Run the official hackathon kit schema validator (when monsoon_r1 is installed / in PYTHONPATH):
+python -m monsoon_r1.schema_validator http://localhost:8000
 ```
 
-### 3. Open the Live Interactive Dashboard
-With `python serve.py --port 8000` running, open [`dashboard/index.html`](dashboard/index.html) directly in your browser (or serve it via `python -m http.server 8080 --directory dashboard` and open `http://localhost:8080`). Every map, KPI, state forecast, and trust badge is computed live from `POST /simulate`.
-
-### 4. Re-Train & Evaluate from Scratch
+### 5. Re-Train & Evaluate from Scratch
 Place `india_climate_train.nc` inside `data/india_climate_train.nc` (gitignored per hackathon rules) and run:
 ```bash
 python train.py --data data/india_climate_train.nc --level 3 --epochs 28 --weights weights/twin.pt

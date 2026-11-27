@@ -117,4 +117,6 @@ async def simulate_endpoint(request: Request) -> dict:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8000)
-    uvicorn.run(app, host="0.0.0.0", port=ap.parse_args().port, log_level="warning")
+    args = ap.parse_args()
+    print(f"VarshaTwin server ready ({MODEL_NAME}) -> listening on http://0.0.0.0:{args.port} (open dashboard/index.html)")
+    uvicorn.run(app, host="0.0.0.0", port=args.port, log_level="warning")
